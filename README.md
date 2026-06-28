@@ -35,6 +35,7 @@
 | *"Buy $5 of YES on `<market>` at 0.42."* | dry-run preview → submits with `--yes` |
 | *"Show my open positions and portfolio value."* | `data positions` · `data value` |
 | *"Cancel all my open orders."* | `clob cancel-all` |
+| *"Scan Polymarket for opportunities."* | runs the multi-agent scan → ranked opportunities, auto-fires structural arbs within limits, escalates the rest |
 
 ## 📦 What's inside
 
