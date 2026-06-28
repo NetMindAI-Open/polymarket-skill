@@ -1,0 +1,10 @@
+{
+  "max_notional_per_order_usd": 10,
+  "max_total_per_run_usd": 50,
+  "min_confidence_auto": 0.75,
+  "min_confidence_report": 0.5,
+  "min_liquidity_usd": 5000,
+  "min_depth_multiple": 2,
+  "max_book_take_pct": 25,
+  "auto_execute_strategies": ["risk-free-arb", "multi-outcome-arb"]
+}
