@@ -78,3 +78,46 @@ def test_book_take_pct_skips():
 def test_at_run_total_boundary_is_allowed():
     # size 8, run_total 42, cap 50 -> 50 not > 50 -> not skipped
     assert risk_gate.decide(base_opp(), CFG, 42)["decision"] == "auto"
+
+
+def test_confidence_at_report_floor_not_skipped():
+    opp = base_opp()
+    opp["confidence"] = 0.5  # == min_confidence_report; strict < means NOT skipped
+    assert risk_gate.decide(opp, CFG, 0)["decision"] == "escalate"
+
+
+def test_confidence_at_auto_floor_auto_executes():
+    opp = base_opp()
+    opp["confidence"] = 0.75  # == min_confidence_auto; >= qualifies for auto
+    opp["liquidity_check"]["depth_usd_at_price"] = 1000
+    assert risk_gate.decide(opp, CFG, 0)["decision"] == "auto"
+
+
+def test_size_at_per_order_cap_not_skipped():
+    opp = base_opp()
+    opp["proposed_action"]["size_usd"] = 10  # == cap; strict > means NOT skipped
+    opp["liquidity_check"]["depth_usd_at_price"] = 1000
+    assert risk_gate.decide(opp, CFG, 0)["decision"] == "auto"
+
+
+def test_book_take_at_boundary_not_skipped():
+    opp = base_opp()
+    opp["proposed_action"]["size_usd"] = 5
+    opp["liquidity_check"]["depth_usd_at_price"] = 20  # 5/20 = 25% == cap; strict > means NOT skipped
+    assert risk_gate.decide(opp, CFG, 0)["decision"] == "auto"
+
+
+def test_depth_at_floor_not_skipped():
+    import copy
+    cfg = copy.deepcopy(risk_gate.DEFAULTS)
+    cfg["max_book_take_pct"] = 100  # raise book-take cap to isolate the depth check
+    opp = base_opp()
+    opp["proposed_action"]["size_usd"] = 8
+    opp["liquidity_check"]["depth_usd_at_price"] = 16  # == 2*size; strict < means NOT skipped on depth
+    assert risk_gate.decide(opp, cfg, 0)["decision"] == "auto"
+
+
+def test_multi_outcome_arb_auto_executes():
+    opp = base_opp()
+    opp["strategy"] = "multi-outcome-arb"  # the OTHER allowlisted structural arb
+    assert risk_gate.decide(opp, CFG, 0)["decision"] == "auto"

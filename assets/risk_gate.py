@@ -47,7 +47,7 @@ def validate_opportunity(obj):
     return errors
 
 
-def decide(opportunity, config, run_total_usd):
+def decide(opportunity: dict, config: dict, run_total_usd: float) -> dict:
     """Return {"decision": "auto"|"escalate"|"skip", "reason": str}.
 
     Applies 8 decision checks in strict order; first match wins.
