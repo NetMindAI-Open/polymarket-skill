@@ -45,3 +45,51 @@ def validate_opportunity(obj):
         loc = "/".join(str(p) for p in err.path) or "(root)"
         errors.append(f"{loc}: {err.message}")
     return errors
+
+
+def decide(opportunity, config, run_total_usd):
+    """Return {"decision": "auto"|"escalate"|"skip", "reason": str}.
+
+    Applies 8 decision checks in strict order; first match wins.
+    """
+    pa = opportunity["proposed_action"]
+    lc = opportunity["liquidity_check"]
+    size = pa["size_usd"]
+    conf = opportunity["confidence"]
+    strat = opportunity["strategy"]
+    mkt_liq = lc.get("market_liquidity_usd", 0)
+    depth = lc.get("depth_usd_at_price", 0)
+
+    def result(decision, reason):
+        return {"decision": decision, "reason": reason}
+
+    # Check 1: confidence < min_confidence_report
+    if conf < config["min_confidence_report"]:
+        return result("skip", "confidence below report floor")
+
+    # Check 2: market liquidity below floor
+    if mkt_liq < config["min_liquidity_usd"]:
+        return result("skip", "market liquidity below floor")
+
+    # Check 3: insufficient book depth
+    if depth < config["min_depth_multiple"] * size:
+        return result("skip", "insufficient book depth at price")
+
+    # Check 4: over per-order cap
+    if size > config["max_notional_per_order_usd"]:
+        return result("skip", "order notional over per-order cap")
+
+    # Check 5: would breach per-run cap
+    if run_total_usd + size > config["max_total_per_run_usd"]:
+        return result("skip", "would breach per-run total cap")
+
+    # Check 6: takes too much resting depth
+    if depth > 0 and (size / depth) * 100 > config["max_book_take_pct"]:
+        return result("skip", "order would take too much resting depth")
+
+    # Check 7: auto-execute if structural arb with high confidence
+    if strat in config["auto_execute_strategies"] and conf >= config["min_confidence_auto"]:
+        return result("auto", "structural arb within caps and confident")
+
+    # Check 8: otherwise escalate
+    return result("escalate", "requires human confirmation")
