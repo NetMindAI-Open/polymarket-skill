@@ -5,7 +5,10 @@
 set -euo pipefail
 
 TOOL="${1:-}"
-ARGS="${2:-{}}"
+ARGS="${2:-}"
+if [ -z "$ARGS" ]; then
+  ARGS='{}'
+fi
 CONFIG="${POLY_MCP_CONFIG:-$HOME/.claude.json}"
 
 if [ -z "$TOOL" ]; then
