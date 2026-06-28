@@ -31,7 +31,7 @@ agents may do small targeted extra pulls beyond the universe (scout blind-spot c
 Each returns an array of Opportunity objects matching `reference/opportunity.schema.json`.
 
 ## 3. Synthesize
-- Validate each returned object: `python3 assets/risk_gate.py validate` (drop invalid ones, note them).
+- Validate each returned object: `echo '<opportunity-json>' | python3 assets/risk_gate.py validate` (drop invalid ones, note them).
 - Dedupe by `(condition_id, outcome)`; if two strategies surface the same one, keep the
   higher `confidence` and record both strategy names.
 - Rank by `confidence` (tie-break by `edge_estimate`).
@@ -45,6 +45,8 @@ The output is `{"decision":"auto"|"escalate"|"skip","reason":"…"}`:
 - **skip** — record the reason; do nothing.
 - **escalate** — add to the escalation list (present to the user; do not execute now).
 - **auto** — execute (Step 5), then add the filled `size_usd` to `run_total_usd`.
+
+**Safety invariant:** `decide` only ever returns `auto` for the structural-arb strategies (`risk-free-arb`, `multi-outcome-arb`) — the gate's allowlist enforces this in one place. Never auto-execute a directional opportunity (momentum, mean-reversion, spread-capture, smart-money); if one ever shows `auto`, treat it as `escalate`.
 
 ## 5. Execute (auto only — dry-run first, always)
 For each `auto` opportunity, build the matching `poly` order from `proposed_action`:
