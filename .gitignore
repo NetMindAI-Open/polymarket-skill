@@ -5,3 +5,8 @@
 *.swp
 .idea/
 .vscode/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
