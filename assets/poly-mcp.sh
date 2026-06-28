@@ -58,14 +58,14 @@ print(json.dumps({"jsonrpc":"2.0","id":2,"method":"tools/call",
   "params":{"name":sys.argv[1],"arguments":json.loads(sys.argv[2])}}))
 PY
 )
-curl -fsS -X POST "$URL" -H "$AUTHH" -H "$CT" -H "$ACC" -H "$SIDH" -d "$REQ" \
-  | sed -n 's/^data: //p' \
-  | python3 - <<'PY'
+RESP=$(curl -fsS -X POST "$URL" -H "$AUTHH" -H "$CT" -H "$ACC" -H "$SIDH" -d "$REQ")
+python3 - "$RESP" <<'PY'
 import json, sys
-raw = sys.stdin.read().strip()
-if not raw:
+raw = sys.argv[1]
+data_lines = [ln[6:] for ln in raw.splitlines() if ln.startswith("data: ")]
+if not data_lines:
     print('{"error":"empty MCP response"}'); sys.exit(1)
-d = json.loads(raw.splitlines()[-1])
+d = json.loads(data_lines[-1])
 if "error" in d:
     print(json.dumps({"error": d["error"]})); sys.exit(1)
 for c in d.get("result", {}).get("content", []):
