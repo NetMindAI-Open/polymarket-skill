@@ -93,3 +93,33 @@ def decide(opportunity: dict, config: dict, run_total_usd: float) -> dict:
 
     # Check 8: otherwise escalate
     return result("escalate", "requires human confirmation")
+
+
+def _main(argv=None):
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="Polymarket scanner risk gate")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    d = sub.add_parser("decide")
+    d.add_argument("--config", default=None)
+    d.add_argument("--run-total", type=float, default=0.0)
+
+    sub.add_parser("validate")
+
+    args = parser.parse_args(argv)
+    obj = json.load(sys.stdin)
+
+    if args.cmd == "decide":
+        cfg = load_config(args.config)
+        print(json.dumps(decide(obj, cfg, args.run_total)))
+        return 0
+
+    errors = validate_opportunity(obj)
+    print(json.dumps({"errors": errors}))
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())
