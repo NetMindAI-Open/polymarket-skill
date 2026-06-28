@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Opportunity",
+  "type": "object",
+  "required": ["strategy", "condition_id", "slug", "token_id", "outcome", "thesis", "proposed_action", "confidence", "liquidity_check"],
+  "additionalProperties": true,
+  "properties": {
+    "strategy": {"type": "string", "enum": ["momentum", "mean-reversion", "multi-outcome-arb", "spread-capture", "risk-free-arb", "smart-money"]},
+    "condition_id": {"type": "string", "minLength": 1},
+    "slug": {"type": "string", "minLength": 1},
+    "token_id": {"type": "string", "minLength": 1},
+    "outcome": {"type": "string", "enum": ["yes", "no"]},
+    "thesis": {"type": "string", "minLength": 1},
+    "signal": {"type": "object"},
+    "proposed_action": {
+      "type": "object",
+      "required": ["side", "order_type", "size_usd"],
+      "properties": {
+        "side": {"type": "string", "enum": ["BUY", "SELL"]},
+        "order_type": {"type": "string", "enum": ["limit", "market"]},
+        "price": {"type": "number", "minimum": 0, "maximum": 1},
+        "size_usd": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "edge_estimate": {"type": "string"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "liquidity_check": {
+      "type": "object",
+      "required": ["market_liquidity_usd", "depth_usd_at_price"],
+      "properties": {
+        "market_liquidity_usd": {"type": "number", "minimum": 0},
+        "depth_usd_at_price": {"type": "number", "minimum": 0},
+        "est_slippage": {"type": "number"}
+      }
+    },
+    "risks": {"type": "array", "items": {"type": "string"}}
+  }
+}
