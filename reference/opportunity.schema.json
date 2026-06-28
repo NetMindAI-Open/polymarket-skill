@@ -20,7 +20,13 @@
         "order_type": {"type": "string", "enum": ["limit", "market"]},
         "price": {"type": "number", "minimum": 0, "maximum": 1},
         "size_usd": {"type": "number", "exclusiveMinimum": 0}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"order_type": {"const": "limit"}}, "required": ["order_type"]},
+          "then": {"required": ["price"]}
+        }
+      ]
     },
     "edge_estimate": {"type": "string"},
     "confidence": {"type": "number", "minimum": 0, "maximum": 1},
