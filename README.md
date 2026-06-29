@@ -94,9 +94,12 @@ agent will walk you through this — full steps in the
 
 ## 🔒 Safety
 
-Trades spend **real USDC on Polygon.** This skill ships an **autonomous** posture — the agent may submit
-live orders with `--yes` without per-order approval — and does **not** enforce spending limits (a
-deliberate, thin-by-design choice; the limits in [SKILL.md](SKILL.md) are guidance, not hard caps).
+Trades spend **real USDC on Polygon.** The base `buy`/`sell` flow ships an **autonomous** posture — the
+agent may submit live orders with `--yes` without per-order approval — and does **not** enforce spending
+limits there (a deliberate, thin-by-design choice; the limits in [SKILL.md](SKILL.md) are guidance). The
+**multi-agent scanner is different**: its risk gate enforces hard caps (per-order, per-run, liquidity,
+depth) and only auto-executes structural arbs — everything else escalates. Tune those caps in
+[reference/config.md](reference/config.md).
 
 ✅ Prefer a `--dry-run` preview before any live order &nbsp;·&nbsp; ✅ Tell the agent your per-order /
 per-day limits if you want them honored &nbsp;·&nbsp; ✅ A wallet must be funded **and** approved to fill.

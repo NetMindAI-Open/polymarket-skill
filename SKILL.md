@@ -126,7 +126,7 @@ and ranks their Opportunity objects, then runs each through the deterministic ri
 structural arbs — `risk-free-arb`, `multi-outcome-arb` — when confident and within limits),
 **escalate** (everything else, incl. all directional strategies → ask the user), or **skip**.
 Auto-executed orders always run `--dry-run` and a preview match before `--yes`. Hard limits
-live in `~/.config/polymarket/agent.json` (see [reference/config.example.json](reference/config.example.json));
+live in `~/.config/polymarket/agent.json` (every key explained in [reference/config.md](reference/config.md));
 conservative defaults apply if absent, and the user may override limits inline for a run.
 
 **MCP access.** Reach the polymarket MCP through [assets/poly-mcp.sh](assets/poly-mcp.sh)
