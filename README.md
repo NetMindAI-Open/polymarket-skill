@@ -69,7 +69,19 @@ poly setup                     # hidden prompt → ~/.config/polymarket/config.j
 # or: export POLYMARKET_PRIVATE_KEY=0x...
 ```
 
-**3. Install the skill:**
+**3. Load the Polymarket MCP** (read-only market data — powers search, screening & the scanner):
+
+```bash
+claude mcp add --transport http --scope user polymarket \
+  https://polymarket.mcp.askcloud.ai/mcp \
+  --header "Authorization: Bearer <YOUR_BEARER_TOKEN>"
+claude mcp get polymarket      # verify → Status: ✔ Connected
+```
+
+> Swap in your own bearer token. The skill reaches the server through `assets/poly-mcp.sh`, which reads
+> the URL + token from `~/.claude.json` and never echoes it — more in [reference/mcp.md](reference/mcp.md).
+
+**4. Install the skill:**
 
 ```bash
 # Claude Code — drop it in so SKILL.md sits at the folder root
@@ -79,6 +91,14 @@ cp -R polymarket-skill ~/.claude/skills/polymarket
 Restart Claude Code; it activates whenever you mention Polymarket, prediction-market odds, or placing a
 bet. **OpenClaw / clawhub** — the same folder installs as an OpenClaw skill; users just need `poly` on
 their `PATH` via the one-liner above.
+
+> **Developing the skill itself?** Symlink instead of copying, so edits to your working tree are reflected
+> in the installed skill with no re-copy:
+> ```bash
+> ln -s "$(pwd)/polymarket-skill" ~/.claude/skills/polymarket
+> ```
+> Restart Claude Code after edits to reload (skills load at session start). `rm ~/.claude/skills/polymarket`
+> removes only the symlink, never your repo.
 
 ## 🆕 New wallet? Activate it first
 
