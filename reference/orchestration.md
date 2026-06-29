@@ -66,3 +66,27 @@ preview; if the market moved beyond the proposed price, abort (stale-snapshot gu
 - **Ranked table:** rank · strategy · market · action · edge · confidence · liquidity · gate decision.
 - **Executed:** each auto order's `order_id` + status from `{"result":"ACCEPTED order_id=… status=…"}`.
 - **Escalations:** proposed orders awaiting the user's go, each with thesis + dry-run preview.
+
+## 7. Emit dashboard artifact
+Turn the run into the visual dashboard instead of leaving it as a text table. Attach each gate
+result to its opportunity (`"gate": {"decision": …, "order_id": …}`), then let the deterministic
+mapper assemble + inject `DATA` — **don't hand-write the JSON**:
+
+1. **Curate + enrich.** Pick the subset to show = every opportunity's market + the top ~30 universe
+   rows by 24h volume (`top_n`, default 30 — raise it to show more). For *that subset only*, fetch enrichment:
+   - real **event slug** → `url` (`assets/poly-mcp.sh get_market …` or Gamma `events[].slug`; a market/guessed slug 404s),
+   - `candles` (`get_price_history`), `depth` (`get_order_book_depth`), `net_flow` (`get_market_stats`),
+   - `category` / `end_date` / `description` / `volume_total` (Gamma).
+   Enriching only the subset (not all 50–150) keeps the payload small.
+2. **Assemble `run.json`** = `{generated_at, wallet_label, top_n, universe, opportunities(+gate), enrichment, account}`.
+   For `account`, check the wallet first with `poly -o json wallet show`: **set up → gather it** (`clob balance
+   --asset-type collateral`, `data value`, `data positions`, `clob orders`, `clob trades`); **no key / errors →
+   set `account: null`** so the Account tab renders wallet-setup steps (Markets/Recommendations still work).
+   Full shape: [artifacts.md](artifacts.md).
+3. **Build + inject:**
+
+       python3 assets/build_data.py --inject assets/dashboard-template.html < run.json > dashboard.html
+
+   Emit `dashboard.html` as the artifact. The mapper maps opportunities→recommendations (gate decision →
+   `executed`/`pending`/`skipped` pill) and sums `meta.stats` from the full universe.
+4. **Caveat** the user: the dashboard is a snapshot frozen at `generated_at`; regenerate to refresh.
