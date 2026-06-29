@@ -1,0 +1,14 @@
+{
+  "strategy": "risk-free-arb",
+  "condition_id": "0xabc",
+  "slug": "will-x-happen",
+  "token_id": "12345",
+  "outcome": "yes",
+  "thesis": "YES+NO priced at 0.97; buying both locks 3% to resolution.",
+  "signal": {"sum_of_outcomes": 0.97},
+  "proposed_action": {"side": "BUY", "order_type": "limit", "price": 0.48, "size_usd": 8},
+  "edge_estimate": "3 cents / ~3%",
+  "confidence": 0.9,
+  "liquidity_check": {"market_liquidity_usd": 20000, "depth_usd_at_price": 50, "est_slippage": 0.001},
+  "risks": ["resolution dispute"]
+}

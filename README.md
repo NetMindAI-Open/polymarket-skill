@@ -35,6 +35,7 @@
 | *"Buy $5 of YES on `<market>` at 0.42."* | dry-run preview → submits with `--yes` |
 | *"Show my open positions and portfolio value."* | `data positions` · `data value` |
 | *"Cancel all my open orders."* | `clob cancel-all` |
+| *"Scan Polymarket for opportunities."* | runs the multi-agent scan → ranked opportunities, auto-fires structural arbs within limits, escalates the rest |
 
 ## 📦 What's inside
 
@@ -68,7 +69,19 @@ poly setup                     # hidden prompt → ~/.config/polymarket/config.j
 # or: export POLYMARKET_PRIVATE_KEY=0x...
 ```
 
-**3. Install the skill:**
+**3. Load the Polymarket MCP** (read-only market data — powers search, screening & the scanner):
+
+```bash
+claude mcp add --transport http --scope user polymarket \
+  https://polymarket.mcp.askcloud.ai/mcp \
+  --header "Authorization: Bearer <YOUR_BEARER_TOKEN>"
+claude mcp get polymarket      # verify → Status: ✔ Connected
+```
+
+> Swap in your own bearer token. The skill reaches the server through `assets/poly-mcp.sh`, which reads
+> the URL + token from `~/.claude.json` and never echoes it — more in [reference/mcp.md](reference/mcp.md).
+
+**4. Install the skill:**
 
 ```bash
 # Claude Code — drop it in so SKILL.md sits at the folder root
@@ -78,6 +91,14 @@ cp -R polymarket-skill ~/.claude/skills/polymarket
 Restart Claude Code; it activates whenever you mention Polymarket, prediction-market odds, or placing a
 bet. **OpenClaw / clawhub** — the same folder installs as an OpenClaw skill; users just need `poly` on
 their `PATH` via the one-liner above.
+
+> **Developing the skill itself?** Symlink instead of copying, so edits to your working tree are reflected
+> in the installed skill with no re-copy:
+> ```bash
+> ln -s "$(pwd)/polymarket-skill" ~/.claude/skills/polymarket
+> ```
+> Restart Claude Code after edits to reload (skills load at session start). `rm ~/.claude/skills/polymarket`
+> removes only the symlink, never your repo.
 
 ## 🆕 New wallet? Activate it first
 
@@ -93,9 +114,12 @@ agent will walk you through this — full steps in the
 
 ## 🔒 Safety
 
-Trades spend **real USDC on Polygon.** This skill ships an **autonomous** posture — the agent may submit
-live orders with `--yes` without per-order approval — and does **not** enforce spending limits (a
-deliberate, thin-by-design choice; the limits in [SKILL.md](SKILL.md) are guidance, not hard caps).
+Trades spend **real USDC on Polygon.** The base `buy`/`sell` flow ships an **autonomous** posture — the
+agent may submit live orders with `--yes` without per-order approval — and does **not** enforce spending
+limits there (a deliberate, thin-by-design choice; the limits in [SKILL.md](SKILL.md) are guidance). The
+**multi-agent scanner is different**: its risk gate enforces hard caps (per-order, per-run, liquidity,
+depth) and only auto-executes structural arbs — everything else escalates. Tune those caps in
+[reference/config.md](reference/config.md).
 
 ✅ Prefer a `--dry-run` preview before any live order &nbsp;·&nbsp; ✅ Tell the agent your per-order /
 per-day limits if you want them honored &nbsp;·&nbsp; ✅ A wallet must be funded **and** approved to fill.

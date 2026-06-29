@@ -1,6 +1,6 @@
 ---
 name: polymarket
-description: Query and trade on Polymarket prediction markets — search markets, check live odds/order books, view positions and balances, place and cancel orders. Use when the user mentions Polymarket, prediction-market odds, betting on an event/election/crypto outcome, or wants to check or trade a market's probability.
+description: Query and trade on Polymarket prediction markets — search markets, check live odds/order books, view positions and balances, place and cancel orders, and run a multi-agent opportunity scan that hunts mispricings and arbitrage across strategies. Use when the user mentions Polymarket, prediction-market odds, betting on an event/election/crypto outcome, wants to check or trade a market's probability, or asks to scan/find Polymarket opportunities.
 ---
 
 # Polymarket
@@ -111,3 +111,42 @@ following as obligations on the agent's behavior:
 
 Copy-pasteable multi-step workflows (find→price→preview→submit, check positions, cancel a market's
 orders, activate a new wallet): [reference/recipes.md](reference/recipes.md).
+
+## Opportunity scanning (multi-agent)
+
+When the user asks to **scan / find opportunities** (mispricings, arbitrage, movers worth
+trading), run the orchestration playbook in [reference/orchestration.md](reference/orchestration.md).
+In one on-demand pass it: scouts a shared candidate universe via the MCP, fans out six
+parallel strategy sub-agents (momentum, mean-reversion, multi-outcome-arb, spread-capture,
+risk-free-arb, smart-money — see [reference/strategies/](reference/strategies/)), synthesizes
+and ranks their Opportunity objects, then runs each through the deterministic risk gate
+(`assets/risk_gate.py`).
+
+**Semi-auto execution.** The risk gate decides per opportunity: **auto-execute** (only the
+structural arbs — `risk-free-arb`, `multi-outcome-arb` — when confident and within limits),
+**escalate** (everything else, incl. all directional strategies → ask the user), or **skip**.
+Auto-executed orders always run `--dry-run` and a preview match before `--yes`. Hard limits
+live in `~/.config/polymarket/agent.json` (every key explained in [reference/config.md](reference/config.md));
+conservative defaults apply if absent, and the user may override limits inline for a run.
+
+**MCP access.** Reach the polymarket MCP through [assets/poly-mcp.sh](assets/poly-mcp.sh)
+(see [reference/mcp.md](reference/mcp.md)); native `mcp__polymarket__*` calls may be blocked
+by a health-check hook false positive.
+
+## Dashboard artifact (visualize)
+
+When the user asks to **show / visualize / "make a dashboard" / "display my positions or markets"**,
+render the multi-tab HTML dashboard as an **Artifact** instead of printing JSON tables. The artifact is
+sandboxed — it **cannot** run `poly` or call the MCP — so you inject a data snapshot at generation time.
+Full procedure, `DATA` schema, and source map: [reference/artifacts.md](reference/artifacts.md).
+
+1. **Fetch** what they asked to see: Markets → `markets get/search` (+ MCP `get_order_book_depth`,
+   `get_price_history`, `get_market_stats` for depth / OHLC candles / flow); Recommendations → your own
+   analysis; Account → `clob balance`, `data value`, `data positions`, `clob orders`, `clob trades`,
+   `wallet show` (skip and set `account: null` if no key is configured).
+2. **Build** one `DATA` object (schema in artifacts.md). Keep numbers as the Decimal strings the sources
+   return; stamp `meta.generated_at` = now. Unfetched lists → `[]`, skipped objects → `null`.
+3. **Inject** — read [assets/dashboard-template.html](assets/dashboard-template.html), replace only the
+   `POLYMARKET_DATA_START…END` block with your `const DATA = {…}`, emit the file as the artifact.
+4. **Caveat**: the dashboard is a snapshot frozen at `generated_at`; tell the user to regenerate for
+   fresh data. Always render through this template — don't hand-roll one-off dashboard HTML.

@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polymarket — Odds Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1216; --ink-2:#0B0E12; --surface:#15191F; --surface-2:#1B2027;
+    --line:#272E37; --line-soft:#1D232B;
+    --text:#ECEFF3; --dim:#9AA3AE; --faint:#646D78;
+    --yes:#35D6A0; --yes-dim:rgba(53,214,160,.13); --yes-line:rgba(53,214,160,.30);
+    --no:#FF6B5C; --no-dim:rgba(255,107,92,.13); --no-line:rgba(255,107,92,.30);
+    --signal:#E7B25C; --signal-dim:rgba(231,178,92,.15);
+    --display:'Space Grotesk','Segoe UI',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--body); color:var(--text); background:var(--ink);
+    -webkit-font-smoothing:antialiased; line-height:1.5; padding:0 0 56px;
+    background-image:linear-gradient(180deg,#10141A 0%,var(--ink) 240px);
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:0 22px}
+  .eyebrow{font-family:var(--display);font-size:10.5px;font-weight:600;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--faint)}
+
+  /* ---------- header ---------- */
+  .head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:24px 0 16px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand .mark{color:var(--signal);font-size:13px;transform:translateY(-1px)}
+  .brand .word{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.01em}
+  .brand .sub{font-family:var(--display);font-size:10.5px;font-weight:600;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--faint)}
+  .wallet{font-family:var(--mono);font-size:12px;color:var(--dim);
+    border:1px solid var(--line);border-radius:6px;padding:4px 10px}
+  .dateline{margin-left:auto;display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+  .dateline .dot{width:6px;height:6px;border-radius:50%;background:var(--signal);
+    box-shadow:0 0 0 3px var(--signal-dim)}
+  .regen{appearance:none;cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--dim);
+    background:transparent;border:1px solid var(--line);border-radius:6px;padding:5px 11px}
+  .regen:hover{border-color:var(--signal);color:var(--text)}
+
+  /* ---------- tabs ---------- */
+  nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 26px}
+  .tab{appearance:none;background:transparent;border:0;cursor:pointer;color:var(--faint);
+    font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.04em;
+    padding:14px 16px;position:relative}
+  .tab:hover{color:var(--dim)}
+  .tab[aria-selected="true"]{color:var(--text)}
+  .tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--signal)}
+  .tab .count{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:7px}
+  .tab[aria-selected="true"] .count{color:var(--signal)}
+  .tab:focus-visible{outline:2px solid var(--signal);outline-offset:-3px;border-radius:4px}
+  [role="tabpanel"][hidden]{display:none}
+  [role="tabpanel"]{animation:rise .28s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---------- readme — landing page ---------- */
+  .readme code{font-family:var(--mono);font-size:.9em;background:rgba(255,255,255,0.06);border:1px solid var(--line-soft);border-radius:4px;padding:1px 5px;color:var(--text)}
+  .readme a,.lnk{color:var(--signal);text-decoration:none;border-bottom:1px solid rgba(231,178,92,.4)}
+  .readme a:hover,.lnk:hover{border-bottom-color:var(--signal)}
+  .lnk{appearance:none;background:0;border:0;border-bottom:1px solid rgba(231,178,92,.4);padding:0;cursor:pointer;font:inherit}
+
+  /* hero */
+  .rm-hero{padding:4px 0 0}
+  .rm-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .rm-live{width:7px;height:7px;border-radius:50%;background:var(--yes);box-shadow:0 0 0 3px var(--yes-dim);animation:rm-pulse 2.4s ease-in-out infinite}
+  @keyframes rm-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .rm-h1{font-family:var(--display);font-weight:700;font-size:clamp(31px,4.6vw,48px);line-height:1.03;letter-spacing:-.025em;color:var(--text);margin:20px 0 0}
+  .rm-h1 .a{color:var(--signal)} .rm-h1 .y{color:var(--yes)}
+  .rm-sub{font-size:15.5px;color:var(--dim);line-height:1.65;max-width:600px;margin:18px 0 0}
+  .rm-sub b{color:var(--text);font-weight:500}
+  /* odds tape — signature */
+  .rm-tape{position:relative;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    padding:11px 0;margin-top:30px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+  .rm-tape-track{display:inline-flex;align-items:center;white-space:nowrap;will-change:transform;animation:rm-marq 70s linear infinite;font-family:var(--mono);font-size:12.5px}
+  .rm-tape:hover .rm-tape-track{animation-play-state:paused}
+  .rm-tick{color:var(--dim)} .rm-tick i{font-style:normal;font-weight:600}
+  .rm-tick i.y{color:var(--yes)} .rm-tick i.n{color:var(--no)}
+  .rm-sep{color:var(--faint);margin:0 15px}
+  @keyframes rm-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* content blocks */
+  .rm-block{padding:32px 0;border-top:1px solid var(--line-soft);margin-top:6px}
+  .rm-block:last-child{padding-bottom:4px}
+  .rm-kicker{display:flex;align-items:center;gap:11px;font-family:var(--display);font-size:11.5px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--text);margin:0 0 8px}
+  .rm-kicker::before{content:"";width:20px;height:1px;background:var(--signal)}
+  .rm-lead{font-size:14px;color:var(--dim);line-height:1.6;max-width:620px;margin:0 0 22px}
+  .rm-lead b{color:var(--text);font-weight:500}
+
+  /* setup timeline */
+  .rm-time{list-style:none;margin:0;padding:0;position:relative}
+  .rm-time::before{content:"";position:absolute;left:13px;top:8px;bottom:20px;width:1px;background:var(--line)}
+  .rm-time li{position:relative;display:flex;gap:16px;padding:0 0 18px}
+  .rm-time li:last-child{padding-bottom:0}
+  .rm-dot{position:relative;z-index:1;flex:none;width:27px;height:27px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--signal);background:var(--ink);border:1px solid rgba(231,178,92,.5)}
+  .rm-time li.done .rm-dot{color:var(--yes);border-color:var(--yes-line);background:var(--yes-dim)}
+  .rm-tc{padding-top:2px}
+  .rm-tc h3{font-family:var(--display);font-size:14.5px;font-weight:500;color:var(--text);margin:2px 0 4px}
+  .rm-tc p{font-size:13.5px;color:var(--dim);line-height:1.55;margin:0}
+  .rm-flag{font-size:13px;color:var(--dim);background:var(--signal-dim);border:1px solid rgba(231,178,92,.3);
+    border-left:3px solid var(--signal);border-radius:0 9px 9px 0;padding:11px 14px;margin:18px 0 0;line-height:1.55}
+  .rm-flag b{color:var(--text)}
+
+  /* scan pipeline */
+  .rm-flow{display:flex;align-items:stretch;gap:9px;flex-wrap:wrap;margin:0 0 18px}
+  .rm-stage{flex:1 1 150px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .rm-st{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--signal)}
+  .rm-stage p{font-size:12.5px;color:var(--dim);line-height:1.5;margin:8px 0 0}
+  .rm-arrow{display:flex;align-items:center;color:var(--faint);font-family:var(--mono);font-size:15px}
+  .rm-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .rm-chips span{font-family:var(--mono);font-size:10px;color:var(--dim);background:var(--ink-2);border:1px solid var(--line-soft);border-radius:5px;padding:2px 6px}
+  .rm-gate{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .rm-gate span{font-family:var(--mono);font-size:10px;letter-spacing:.02em;border-radius:5px;padding:3px 7px;border:1px solid}
+  .rm-gate .g{color:var(--yes);border-color:var(--yes-line);background:var(--yes-dim)}
+  .rm-gate .a{color:var(--signal);border-color:rgba(231,178,92,.4);background:var(--signal-dim)}
+  .rm-gate .m{color:var(--faint);border-color:var(--line)}
+  .rm-safe{font-size:13px;color:var(--dim);background:var(--yes-dim);border:1px solid var(--yes-line);
+    border-left:3px solid var(--yes);border-radius:0 9px 9px 0;padding:11px 14px;margin:0;line-height:1.55}
+  .rm-safe b{color:var(--text)}
+
+  /* ask — command palette */
+  .rm-palette{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+  .rm-pbar{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:12.5px;color:var(--faint)}
+  .rm-pbar .c{color:var(--signal)}
+  .rm-suggest{display:grid;grid-template-columns:1fr 1fr}
+  .rm-sgroup{padding:13px 14px}
+  .rm-sgroup+.rm-sgroup{border-left:1px solid var(--line)}
+  .rm-sgl{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin:0 0 9px;display:flex;align-items:center;gap:7px}
+  .rm-sgl small{font-family:var(--mono);font-size:9.5px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--faint)}
+  .rm-sgl.scan{color:var(--signal)} .rm-sgl.quick{color:var(--yes)}
+  .qbtn{appearance:none;cursor:pointer;display:block;width:100%;text-align:left;font-family:var(--mono);font-size:12.5px;line-height:1.4;
+    color:var(--dim);background:transparent;border:1px solid transparent;border-radius:8px;padding:9px 10px;transition:background .12s,color .12s}
+  .qbtn+.qbtn{margin-top:3px}
+  .qbtn::before{content:"\25b8  ";color:var(--faint)}
+  .qbtn.scan:hover{background:var(--signal-dim);color:var(--text)} .qbtn.scan:hover::before{color:var(--signal)}
+  .qbtn.quick:hover{background:var(--yes-dim);color:var(--text)} .qbtn.quick:hover::before{color:var(--yes)}
+  .qbtn:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
+
+  /* hero load sequence (motion-safe) */
+  @media (prefers-reduced-motion:no-preference){
+    .rm-hero>*{opacity:0;transform:translateY(9px);animation:rm-in .55s cubic-bezier(.2,.7,.2,1) forwards}
+    .rm-hero .rm-eyebrow{animation-delay:.04s} .rm-hero .rm-h1{animation-delay:.12s}
+    .rm-hero .rm-sub{animation-delay:.22s} .rm-hero .rm-tape{animation-delay:.34s}
+  }
+  @keyframes rm-in{to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){ .rm-tape-track{animation:none} }
+  @media (max-width:680px){ .rm-suggest{grid-template-columns:1fr} .rm-sgroup+.rm-sgroup{border-left:0;border-top:1px solid var(--line)} }
+
+  /* ---------- markets toolbar ---------- */
+  .mkt-stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .mkt-stats .s{padding:13px 16px;border-right:1px solid var(--line)}
+  .mkt-stats .s:last-child{border-right:0}
+  .mkt-stats .s .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:20px;
+    font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .mkt-stats .s .k{font-family:var(--display);font-size:9.5px;font-weight:600;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--faint);margin-top:5px}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--yes);box-shadow:0 0 0 3px var(--yes-dim)}
+
+  .cats{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px}
+  .cat{appearance:none;cursor:pointer;font-family:var(--display);font-size:12px;font-weight:600;
+    color:var(--dim);background:var(--surface);border:1px solid var(--line);border-radius:999px;
+    padding:6px 13px;transition:background .15s,border-color .15s,color .15s}
+  .cat:hover{border-color:var(--dim);color:var(--text)}
+  .cat[aria-pressed="true"]{background:var(--signal-dim);border-color:var(--signal);color:var(--signal)}
+  .cat:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px}
+  .search{flex:1;min-width:200px;display:flex;align-items:center;gap:9px;background:var(--surface);
+    border:1px solid var(--line);border-radius:8px;padding:0 13px}
+  .search:focus-within{border-color:var(--signal)}
+  .search .ic{color:var(--faint);font-family:var(--mono);font-size:15px}
+  .search input{flex:1;background:transparent;border:0;outline:none;color:var(--text);
+    font-family:var(--body);font-size:13.5px;padding:10px 0}
+  .search input::placeholder{color:var(--faint)}
+  .sorts{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px;flex-wrap:wrap}
+  .sortb{appearance:none;cursor:pointer;font-family:var(--display);font-size:11.5px;font-weight:600;
+    color:var(--dim);background:transparent;border:0;border-radius:6px;padding:7px 11px;transition:.15s}
+  .sortb:hover{color:var(--text)}
+  .sortb[aria-pressed="true"]{background:var(--signal-dim);color:var(--signal)}
+  .sortb:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
+  .mkt-count{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--faint);margin:16px 0 11px}
+  .mkt-count b{color:var(--dim)}
+
+  /* ---------- market cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:1px;
+    background:var(--line-soft);border:1px solid var(--line-soft);border-radius:12px;overflow:hidden}
+  .mkt{background:var(--surface);padding:14px 15px 13px;cursor:pointer;transition:background .15s}
+  .mkt:hover{background:var(--surface-2)}
+  .mkt:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
+  .mkt-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .mtag{font-family:var(--display);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim);background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:2px 7px}
+  .mtime{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+  .mtime.soon{color:var(--signal)} .mtime.ended{color:var(--no)}
+  .mkt-q{font-family:var(--display);font-size:13.5px;font-weight:500;line-height:1.3;
+    min-height:34px;margin-bottom:11px}
+  .read{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .prob{display:flex;align-items:baseline;gap:8px}
+  .prob .n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;
+    font-size:32px;line-height:.9;letter-spacing:-.02em;color:var(--text)}
+  .prob .u{font-family:var(--mono);font-size:14px;color:var(--dim)}
+  .tag{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:4px}
+  .tag.yes{color:var(--yes);background:var(--yes-dim)}
+  .prob-alt{font-family:var(--mono);font-size:13px;color:var(--no);text-align:right}
+
+  .gauge{position:relative;height:9px;border-radius:5px;overflow:hidden;
+    background:var(--no-dim);border:1px solid var(--no-line);margin:2px 0 7px}
+  .gauge .fill{position:absolute;left:0;top:0;bottom:0;background:var(--yes);
+    border-right:1px solid var(--ink);transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .gauge .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--faint);opacity:.55}
+  .gauge-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;margin-bottom:14px}
+  .gauge-labels .l{color:var(--yes)} .gauge-labels .r{color:var(--no)}
+
+  .mkt-meta{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;
+    color:var(--faint);padding-top:12px;border-top:1px solid var(--line-soft)}
+  .mkt-meta b{color:var(--dim);font-weight:500} .pos{color:var(--yes)} .neg{color:var(--no)}
+
+  .mkt-block{margin-top:11px}
+  .block-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+  .block-head .hint{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.02em}
+  .spark{display:block;width:100%}
+  .empty-mini{font-family:var(--mono);font-size:11px;color:var(--faint);
+    padding:10px 0;border-top:1px dashed var(--line);margin-top:2px}
+  .trade{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:13px;
+    font-family:var(--display);font-size:12px;font-weight:600;letter-spacing:.02em;
+    color:var(--dim);text-decoration:none;border:1px solid var(--line);border-radius:7px;
+    padding:8px 10px;transition:background .15s,border-color .15s,color .15s}
+  .trade:hover{border-color:var(--signal);color:var(--text);background:var(--signal-dim)}
+  .trade .ext{font-family:var(--mono);color:var(--signal)}
+  .trade:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+  .book{font-family:var(--mono);font-size:11.5px}
+  .lvl{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:7px;height:17px;position:relative}
+  .lvl .px{z-index:1} .lvl .sz{z-index:1;color:var(--faint);font-size:10.5px}
+  .lvl .bar{height:11px;border-radius:2px}
+  .lvl.ask .px{color:var(--no)} .lvl.ask .bar{background:var(--no-dim)}
+  .lvl.bid .px{color:var(--yes)} .lvl.bid .bar{background:var(--yes-dim)}
+  .book .spread{display:flex;justify-content:center;gap:6px;color:var(--faint);font-size:10.5px;
+    padding:3px 0;margin:2px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
+  .book .spread b{color:var(--dim);font-weight:500}
+
+  /* ---------- detail modal ---------- */
+  .modal-bg{position:fixed;inset:0;background:rgba(6,8,11,.72);display:flex;align-items:center;
+    justify-content:center;padding:20px;z-index:50;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:16px;max-width:560px;
+    width:100%;max-height:88vh;overflow-y:auto;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.55)}
+  .modal-head{display:flex;align-items:flex-start;gap:14px}
+  .modal-head h2{font-family:var(--display);font-size:19px;font-weight:600;line-height:1.3;margin:0;flex:1}
+  .modal-x{appearance:none;cursor:pointer;background:transparent;border:0;color:var(--faint);
+    font-size:24px;line-height:1;padding:0 2px}
+  .modal-x:hover{color:var(--text)}
+  .modal-x:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:4px}
+  .modal-tags{display:flex;gap:8px;align-items:center;margin:10px 0 0}
+  .modal-tags .mtime{margin-left:0}
+  .modal .desc{font-size:13.5px;color:var(--dim);line-height:1.6;margin:12px 0 18px}
+  .yesno{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .yn{border-radius:12px;padding:15px;text-align:center;border:1px solid}
+  .yn.y{background:var(--yes-dim);border-color:var(--yes-line)}
+  .yn.n{background:var(--no-dim);border-color:var(--no-line)}
+  .yn .lab{font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:.06em}
+  .yn.y .lab{color:var(--yes)} .yn.n .lab{color:var(--no)}
+  .yn .px{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:23px;font-weight:600;margin-top:5px}
+  .yn .sub{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:3px}
+  .mstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .mstat{background:var(--ink-2);border:1px solid var(--line-soft);border-radius:10px;padding:11px 14px}
+  .mstat .k{font-family:var(--display);font-size:9.5px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--faint)}
+  .mstat .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:17px;font-weight:600;margin-top:4px}
+  .modal-chart{margin-bottom:18px}
+  .modal-cta{display:flex}
+  .cta-primary{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;
+    font-family:var(--display);font-size:13.5px;font-weight:600;border-radius:10px;padding:13px;
+    background:var(--signal);color:#1A1206;border:1px solid var(--signal);transition:filter .15s}
+  .cta-primary:hover{filter:brightness(1.07)}
+  .cta-primary:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+  /* ---------- recommendations ---------- */
+  .recs{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px}
+  .rec{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;
+    position:relative;overflow:hidden}
+  .rec::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px}
+  .rec.a-buy::before{background:var(--yes)} .rec.a-sell::before{background:var(--no)}
+  .rec.a-hold::before,.rec.a-watch::before{background:var(--signal)}
+  .rec .top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .badge{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.1em;border-radius:5px;padding:4px 9px}
+  .b-buy{color:var(--yes);background:var(--yes-dim)} .b-sell{color:var(--no);background:var(--no-dim)}
+  .b-hold,.b-watch{color:var(--signal);background:var(--signal-dim)}
+  .rec .target{font-family:var(--mono);font-size:12.5px;color:var(--dim);margin-left:auto}
+  .rec .target b{color:var(--text);font-weight:500}
+  .rec-q{font-family:var(--display);font-size:15px;font-weight:500;line-height:1.3;margin-bottom:14px}
+  .conf{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .conf .lvl-txt{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;width:64px}
+  .c-high{color:var(--yes)} .c-medium{color:var(--signal)} .c-low{color:var(--faint)}
+  .seg{display:flex;gap:3px;flex:1}
+  .seg i{height:8px;flex:1;border-radius:1px;background:var(--line)}
+  .seg.c-high i.on{background:var(--yes)} .seg.c-medium i.on{background:var(--signal)} .seg.c-low i.on{background:var(--dim)}
+  .rationale{font-size:13.5px;color:var(--dim);line-height:1.6;margin-bottom:12px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-family:var(--mono);font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:3px 9px}
+  .chip::before{content:"› ";color:var(--faint)}
+  .rstatus{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+    padding:3px 8px;border-radius:999px;border:1px solid}
+  .rstatus.executed{color:var(--yes);border-color:var(--yes-line);background:var(--yes-dim)}
+  .rstatus.pending{color:var(--signal);border-color:rgba(231,178,92,.4);background:var(--signal-dim)}
+  .rstatus.skipped{color:var(--faint);border-color:var(--line);background:transparent}
+  .rec-meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-family:var(--mono);font-size:11px;
+    color:var(--faint);margin:-4px 0 12px}
+  .rec-meta b{color:var(--dim);font-weight:500}
+  .rec-foot{display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft)}
+  .rorder{font-family:var(--mono);font-size:11px;color:var(--faint)} .rorder b{color:var(--yes);font-weight:500}
+  .rlink{margin-left:auto;font-family:var(--display);font-size:12px;font-weight:600;color:var(--dim);
+    text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .rlink:hover{color:var(--signal)} .rlink .ext{font-family:var(--mono);color:var(--signal)}
+  .rlink:focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:4px}
+
+  /* ---------- account ---------- */
+  .readout{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;margin-bottom:18px}
+  .ro{padding:16px 18px;border-right:1px solid var(--line)}
+  .ro:last-child{border-right:0}
+  .ro .k{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+  .ro .v{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:25px;font-weight:600;letter-spacing:-.01em}
+  .deposit{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin:0 0 24px}
+  .deposit b{color:var(--dim);font-weight:500}
+  .sect-h{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--dim);margin:0 0 10px;padding-top:6px}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin-bottom:24px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+  thead th{text-align:left;border-bottom:1px solid var(--line);padding:0;background:var(--surface)}
+  thead th button{appearance:none;width:100%;background:transparent;border:0;cursor:pointer;
+    color:var(--faint);font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;text-align:left;padding:12px 14px}
+  thead th button:hover{color:var(--dim)}
+  thead th[aria-sort] button{color:var(--signal)}
+  thead th button .arr{margin-left:5px;font-size:9px}
+  td.num,th.num button{text-align:right}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--line-soft);color:var(--dim);
+    font-family:var(--mono);font-variant-numeric:tabular-nums}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:var(--surface)}
+  tbody td.label{font-family:var(--body);color:var(--text)}
+  .pill{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;
+    padding:2px 7px;border-radius:4px;border:1px solid var(--line);color:var(--dim)}
+  .s-buy{color:var(--yes)} .s-sell{color:var(--no)}
+
+  .empty{padding:30px 18px;text-align:center;color:var(--faint);font-size:13.5px;
+    border:1px dashed var(--line);border-radius:10px;margin-bottom:24px}
+  footer{max-width:1200px;margin:34px auto 0;padding:16px 22px 0;border-top:1px solid var(--line-soft);
+    font-family:var(--mono);font-size:11px;color:var(--faint);text-align:center}
+  #nodata{display:none;background:var(--no-dim);border:1px solid var(--no-line);color:var(--no);
+    border-radius:10px;padding:15px;font-size:13.5px;margin:18px 0}
+
+  @media (max-width:640px){
+    .mkt-stats{grid-template-columns:repeat(2,1fr)}
+    .mkt-stats .s:nth-child(2){border-right:0} .mkt-stats .s:nth-child(1),.mkt-stats .s:nth-child(2){border-bottom:1px solid var(--line)}
+    .readout{grid-template-columns:repeat(2,1fr)}
+    .ro:nth-child(2){border-right:0} .ro:nth-child(1),.ro:nth-child(2){border-bottom:1px solid var(--line)}
+    .dateline{margin-left:0} .prob .n{font-size:32px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="nodata">No data injected. This template needs a <code>DATA</code> snapshot —
+  ask your agent to generate the Polymarket dashboard.</div>
+
+  <header class="head">
+    <div class="brand">
+      <span class="mark">◆</span>
+      <span class="word">Polymarket</span>
+      <span class="sub">Odds Terminal</span>
+    </div>
+    <span class="wallet" id="walletLabel"></span>
+    <span class="dateline"><span class="dot"></span><span id="snapTime"></span></span>
+    <button class="regen" id="refreshBtn" type="button" title="Ask the agent to regenerate with fresh data">↻ regenerate</button>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
+    <button class="tab" role="tab" id="tab-readme" aria-controls="panel-readme" aria-selected="true">Readme</button>
+    <button class="tab" role="tab" id="tab-markets" aria-controls="panel-markets" aria-selected="false">Markets <span class="count" id="cnt-markets"></span></button>
+    <button class="tab" role="tab" id="tab-recs" aria-controls="panel-recs" aria-selected="false">Recommendations <span class="count" id="cnt-recs"></span></button>
+    <button class="tab" role="tab" id="tab-account" aria-controls="panel-account" aria-selected="false">Account</button>
+  </nav>
+
+  <main>
+    <section id="panel-readme" role="tabpanel" aria-labelledby="tab-readme">
+      <div class="readme">
+        <header class="rm-hero">
+          <div class="rm-eyebrow"><span class="rm-live"></span> live · agent terminal</div>
+          <h1 class="rm-h1">Read the odds.<br>Run the <span class="a">scan</span>.<br>Place the <span class="y">bet</span>.</h1>
+          <p class="rm-sub">An agent-run Polymarket terminal. Search live odds, run a six-strategy opportunity scan, and trade — all from chat. <b>Reading is free; trading spends real USDC.</b></p>
+          <div class="rm-tape"><div class="rm-tape-track" id="rm-tape" aria-hidden="true"></div></div>
+        </header>
+
+        <section class="rm-block">
+          <h2 class="rm-kicker">Get trading-ready</h2>
+          <p class="rm-lead">Odds, search and dashboards need <b>no setup</b>. Trading takes five steps — once.</p>
+          <ol class="rm-time">
+            <li><span class="rm-dot">1</span><div class="rm-tc"><h3>Hand your agent the key</h3><p>Give it your wallet's private key. It configures the signer (<code>poly setup</code>) to sign orders for you — the key is never printed, echoed, or logged.</p></div></li>
+            <li><span class="rm-dot">2</span><div class="rm-tc"><h3>Connect the same wallet on the site</h3><p>Log in to <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer">polymarket.com</a> with that wallet — import the key into a browser wallet → Connect, or use the email/Magic login that owns it.</p></div></li>
+            <li><span class="rm-dot">3</span><div class="rm-tc"><h3>Enable trading</h3><p>Complete the on-screen approvals. This deploys your deposit wallet and grants the USDC + conditional-token allowances the exchange needs — gasless on the site.</p></div></li>
+            <li><span class="rm-dot">4</span><div class="rm-tc"><h3>Deposit USDC</h3><p>Fund your account through the website. The money lives on your <b>deposit wallet</b>, not the signer address.</p></div></li>
+            <li class="done"><span class="rm-dot">✓</span><div class="rm-tc"><h3>You're ready to trade</h3><p>Confirm with the agent: <code>wallet show</code> (deposit wallet matches your site settings) and <code>clob balance</code> (USDC funded).</p></div></li>
+          </ol>
+          <p class="rm-flag"><b>One gotcha:</b> a brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> until steps 2–3 are done on the site. A clean dry-run isn't proof you're ready.</p>
+        </section>
+
+        <section class="rm-block">
+          <h2 class="rm-kicker">How the scan works</h2>
+          <p class="rm-lead">Ask to <b>"scan for opportunities"</b> and a multi-agent pipeline runs end to end. Only the deterministic risk gate ever spends money.</p>
+          <div class="rm-flow">
+            <div class="rm-stage"><div class="rm-st">scout</div><p>~50–150 markets from 4 screens — movers, volume spikes, spreads, liquidity.</p></div>
+            <div class="rm-arrow">→</div>
+            <div class="rm-stage"><div class="rm-st">6 strategies · in parallel</div><div class="rm-chips"><span>momentum</span><span>mean-reversion</span><span>multi-outcome-arb</span><span>spread-capture</span><span>risk-free-arb</span><span>smart-money</span></div></div>
+            <div class="rm-arrow">→</div>
+            <div class="rm-stage"><div class="rm-st">risk gate</div><div class="rm-gate"><span class="g">auto</span><span class="a">escalate</span><span class="m">skip</span></div><p>validate · dedupe · rank, then decide per trade.</p></div>
+          </div>
+          <p class="rm-safe"><b>Safety:</b> only structural arbitrage auto-executes. Every directional call escalates for your approval — nothing speculative trades without you, and per-order / per-run dollar caps live in one place.</p>
+        </section>
+
+        <section class="rm-block">
+          <h2 class="rm-kicker">Ask your agent</h2>
+          <div class="rm-palette">
+            <div class="rm-pbar"><span class="c">▸</span> ask anything — or pick a starting point</div>
+            <div class="rm-suggest">
+              <div class="rm-sgroup">
+                <div class="rm-sgl scan">runs the scan <small>multi-agent · may trade</small></div>
+                <button class="qbtn scan" type="button" data-q="Scan Polymarket for opportunities">Scan Polymarket for opportunities</button>
+                <button class="qbtn scan" type="button" data-q="Find arbitrage and mispricings across Polymarket right now">Find arbitrage and mispricings right now</button>
+                <button class="qbtn scan" type="button" data-q="Run the opportunity scan with a $30 total cap for today">Run the scan with a $30 cap today</button>
+                <button class="qbtn scan" type="button" data-q="Do a full scan and build me a dashboard of what you find">Do a full scan, then build a dashboard</button>
+              </div>
+              <div class="rm-sgroup">
+                <div class="rm-sgl quick">quick reads <small>read-only · instant</small></div>
+                <button class="qbtn quick" type="button" data-q="What are the odds Brazil wins the 2026 World Cup?">What are the odds Brazil wins the World Cup?</button>
+                <button class="qbtn quick" type="button" data-q="Search Polymarket for 2028 US election markets">Search for election markets</button>
+                <button class="qbtn quick" type="button" data-q="Show my Polymarket balance, positions and open orders">Show my balance, positions and orders</button>
+                <button class="qbtn quick" type="button" data-q="Show the order book and price history for the Fed rate-cut market">Show a market's order book + history</button>
+                <button class="qbtn quick" type="button" data-q="Make me a Polymarket dashboard of the top 30 markets by volume">Build a dashboard of the top 30 markets</button>
+                <button class="qbtn quick" type="button" data-q="What's my Polymarket portfolio value?">What's my portfolio value?</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section id="panel-markets" role="tabpanel" aria-labelledby="tab-markets" hidden></section>
+    <section id="panel-recs" role="tabpanel" aria-labelledby="tab-recs" hidden></section>
+    <section id="panel-account" role="tabpanel" aria-labelledby="tab-account" hidden></section>
+  </main>
+</div>
+<footer>Snapshot — odds and balances are frozen at generation time. Regenerate for live data.</footer>
+
+<script>
+/* === POLYMARKET_DATA_START — agent replaces this whole block ===
+   Fill this object from `poly -o json …` + the polymarket MCP.
+   Full schema + source map: reference/artifacts.md.
+   Keep numbers as the Decimal STRINGS the sources emit ("0.67"); the template parses at render time.
+   Any section you can't/shouldn't fetch → set to [] or null (never omit) so empty states render.
+   Per-market: category/end_date/liquidity/volume_total/description/url are all OPTIONAL.
+   To test empty states: set account.positions/orders/trades to [] and depth/candles to []. */
+const DATA = {
+  meta: { generated_at: "2026-06-28T18:30:00Z", wallet_label: "deposit 0x9377…a1b2", currency: "USDC" },
+  markets: [
+    {
+      question: "How many Fed rate cuts in 2026?",
+      slug: "how-many-fed-rate-cuts-in-2026", condition_id: "0xd4e77ba6f29fc093509d24f508631abd445ecf506bbdc9c4c80e60256a318527",
+      url: "https://polymarket.com/event/how-many-fed-rate-cuts-in-2026",
+      category: "Finance", end_date: "2026-12-31", liquidity: "3147452", volume_total: "39524252",
+      description: "This market will resolve according to the exact amount of cuts of 25 basis points in 2026 by the Fed (including any cuts made during the December meeting).  Emergency rate cuts outside of scheduled FOMC meetings will\u2026",
+      yes_token_id: "12403602920039269077597917340921667997547115084613238528792639013246536343316", no_token_id: "21294592205022969346730955103773391901993330222644504059576935265667917187903",
+      yes_price: "0.77", volume_24h: "271937", net_flow: "10877",
+      depth: { bids: [["0.76","2104","2104"],["0.75","4936","7040"],["0.74","3729","10769"]], asks: [["0.78","5313","5313"],["0.79","2647","7960"],["0.80","3522","11482"]] },
+      candles: [{o:"0.71",h:"0.73",l:"0.70",c:"0.73",v:"10074"},{o:"0.73",h:"0.74",l:"0.72",c:"0.74",v:"11893"},{o:"0.74",h:"0.75",l:"0.73",c:"0.74",v:"17724"},{o:"0.74",h:"0.76",l:"0.74",c:"0.75",v:"6962"},{o:"0.75",h:"0.76",l:"0.74",c:"0.76",v:"12943"},{o:"0.76",h:"0.77",l:"0.76",c:"0.77",v:"8946"},{o:"0.77",h:"0.77",l:"0.76",c:"0.77",v:"17465"},{o:"0.77",h:"0.78",l:"0.76",c:"0.77",v:"6167"}]
+    },
+    {
+      question: "Netanyahu out by...?",
+      slug: "netanyahu-out-before-2027", condition_id: "0xd1796c09d0d6f876f8580086ae9808ec991784e3a74b25a1830a25de71a78c96",
+      url: "https://polymarket.com/event/netanyahu-out-before-2027",
+      category: "Politics", end_date: "2026-12-31", liquidity: "264607", volume_total: "123309260",
+      description: "This market will resolve to \"Yes\" if Benjamin Netanyahu announces that he will resign as Prime Minister of Israel, or otherwise steps down from/is removed from this position by December 31, 2026, 11:59 PM ET. Otherwis\u2026",
+      yes_token_id: "114694726451307654528948558967898493662917070661203465131156925998487819889437", no_token_id: "66255671088804707681511323064315150986307471908131081808279119719218775249892",
+      yes_price: "0.47", volume_24h: "16212", net_flow: "648",
+      depth: { bids: [["0.46","5802","5802"],["0.45","1754","7556"],["0.44","5259","12815"]], asks: [["0.48","5765","5765"],["0.49","1881","7646"],["0.51","4811","12457"]] },
+      candles: [{o:"0.35",h:"0.38",l:"0.34",c:"0.38",v:"8924"},{o:"0.38",h:"0.41",l:"0.38",c:"0.41",v:"9126"},{o:"0.41",h:"0.43",l:"0.41",c:"0.43",v:"17124"},{o:"0.43",h:"0.44",l:"0.43",c:"0.44",v:"2407"},{o:"0.44",h:"0.45",l:"0.43",c:"0.45",v:"8099"},{o:"0.45",h:"0.46",l:"0.45",c:"0.46",v:"2464"},{o:"0.46",h:"0.47",l:"0.46",c:"0.47",v:"9932"},{o:"0.47",h:"0.48",l:"0.47",c:"0.47",v:"5500"}]
+    },
+    {
+      question: "F1 Drivers' Champion",
+      slug: "2026-f1-drivers-champion", condition_id: "0x1b7fd0fe5dbf07c9f7aab729a6688686e5d2df9b443233cd29004bd11818553d",
+      url: "https://polymarket.com/event/2026-f1-drivers-champion",
+      category: "Sports", end_date: "2026-12-06", liquidity: "13969482", volume_total: "180034364",
+      description: "This market will resolve according to the listed driver that finishes 1st in the driver standings for the 2026 F1 season.  This market will resolve as soon as the official results of the final scheduled race of the 20\u2026",
+      yes_token_id: "93099562462257249309605734586566434036442082827152130023015985868027704959821", no_token_id: "66179493383876804270523225216910123185590092065107948827970707627138225160961",
+      yes_price: "0.24", volume_24h: "458168", net_flow: "18326",
+      depth: { bids: [["0.23","2570","2570"],["0.22","3164","5734"],["0.21","4315","10049"]], asks: [["0.25","3949","3949"],["0.26","4217","8166"],["0.27","1794","9960"]] },
+      candles: [{o:"0.23",h:"0.23",l:"0.22",c:"0.23",v:"4534"},{o:"0.23",h:"0.23",l:"0.23",c:"0.23",v:"13568"},{o:"0.23",h:"0.23",l:"0.23",c:"0.23",v:"10706"},{o:"0.23",h:"0.24",l:"0.23",c:"0.24",v:"2574"},{o:"0.24",h:"0.24",l:"0.23",c:"0.24",v:"7095"},{o:"0.24",h:"0.24",l:"0.24",c:"0.24",v:"10412"},{o:"0.24",h:"0.24",l:"0.24",c:"0.24",v:"2381"},{o:"0.24",h:"0.24",l:"0.24",c:"0.24",v:"10163"}]
+    },
+    {
+      question: "MLB World Series Champion 2026",
+      slug: "mlb-world-series-champion-2026", condition_id: "0x3df7be753c8b6ebbddf31d6d63535c4b31c836cb25b1a73085508a271bc103db",
+      url: "https://polymarket.com/event/mlb-world-series-champion-2026",
+      category: "Sports", end_date: "2026-10-31", liquidity: "2089112", volume_total: "32308935",
+      description: "This market will resolve according to the team that wins the 2026 MLB World Series.   If at any point it becomes impossible for a listed team to win the 2026 MLB World Series per the rules of MLB (e.g., they are elimi\u2026",
+      yes_token_id: "52854035362787091895017612076763457120573181014952605669517525908999466984865", no_token_id: "95543103909155130948704747260000445052441626108012711535497120196961332271236",
+      yes_price: "0.14", volume_24h: "210800", net_flow: "8432",
+      depth: { bids: [["0.12","2562","2562"],["0.12","3282","5844"],["0.11","1799","7643"]], asks: [["0.15","1964","1964"],["0.15","2197","4161"],["0.17","3307","7468"]] },
+      candles: [{o:"0.10",h:"0.11",l:"0.10",c:"0.11",v:"9524"},{o:"0.11",h:"0.12",l:"0.11",c:"0.12",v:"12225"},{o:"0.12",h:"0.12",l:"0.12",c:"0.12",v:"15888"},{o:"0.12",h:"0.13",l:"0.12",c:"0.13",v:"12742"},{o:"0.13",h:"0.13",l:"0.12",c:"0.13",v:"11457"},{o:"0.13",h:"0.13",l:"0.13",c:"0.13",v:"15848"},{o:"0.13",h:"0.13",l:"0.13",c:"0.13",v:"16061"},{o:"0.13",h:"0.14",l:"0.13",c:"0.14",v:"8319"}]
+    },
+    {
+      question: "Next French Presidential Election",
+      slug: "next-french-presidential-election", condition_id: "0x8126317d621047fb13d508a2651eecc8d38305904671822a62309c5aabd353aa",
+      url: "https://polymarket.com/event/next-french-presidential-election",
+      category: "Politics", end_date: "2027-04-30", liquidity: "11676984", volume_total: "105527648",
+      description: "The next French presidential election is currently expected to be held around April 2027.  This market pertains to the outcome of the next French presidential election, regardless of whether it follows the scheduled e\u2026",
+      yes_token_id: "55764212211467781322980371912612507865974994976253196346176314491480419639168", no_token_id: "5649717099758674861276159343380402289083378331461490840325685141994171250523",
+      yes_price: "0.085", volume_24h: "181304", net_flow: "7252",
+      depth: { bids: [["0.084","4303","4303"],["0.083","5078","9381"],["0.082","4829","14210"]], asks: [["0.086","4838","4838"],["0.087","5741","10579"],["0.088","5650","16229"]] },
+      candles: [{o:"0.065",h:"0.069",l:"0.064",c:"0.069",v:"6426"},{o:"0.069",h:"0.073",l:"0.069",c:"0.073",v:"5430"},{o:"0.073",h:"0.077",l:"0.072",c:"0.076",v:"14906"},{o:"0.076",h:"0.078",l:"0.076",c:"0.078",v:"6957"},{o:"0.078",h:"0.080",l:"0.077",c:"0.080",v:"15674"},{o:"0.080",h:"0.083",l:"0.080",c:"0.082",v:"11693"},{o:"0.082",h:"0.084",l:"0.082",c:"0.084",v:"4844"},{o:"0.084",h:"0.085",l:"0.083",c:"0.085",v:"16953"}]
+    },
+    {
+      question: "What price will Bitcoin hit in 2026?",
+      slug: "what-price-will-bitcoin-hit-before-2027", condition_id: "0xac32e73aa9e0dae801d88d4f81efd2ef3fa0f04b815f3a0e74426f0762e668cd",
+      url: "https://polymarket.com/event/what-price-will-bitcoin-hit-before-2027",
+      category: "Crypto", end_date: "2027-01-01", liquidity: "2122894", volume_total: "45022045",
+      description: "What price will Bitcoin hit before 2027?",
+      yes_token_id: "61368943128255287414565270336856615453000675377332178800733742873558311943412", no_token_id: "96993471854400156408670527613150944443359272190785251193551242374636006072800",
+      yes_price: "0.015", volume_24h: "89247", net_flow: "3569",
+      depth: { bids: [["0.014","5070","5070"],["0.013","3682","8752"],["0.011","1502","10254"]], asks: [["0.015","5198","5198"],["0.017","2677","7875"],["0.018","4482","12357"]] },
+      candles: [{o:"0.012",h:"0.013",l:"0.012",c:"0.013",v:"3811"},{o:"0.013",h:"0.014",l:"0.013",c:"0.014",v:"10700"},{o:"0.014",h:"0.014",l:"0.014",c:"0.014",v:"5467"},{o:"0.014",h:"0.014",l:"0.014",c:"0.014",v:"14251"},{o:"0.014",h:"0.015",l:"0.014",c:"0.014",v:"4220"},{o:"0.014",h:"0.015",l:"0.014",c:"0.014",v:"2028"},{o:"0.014",h:"0.015",l:"0.014",c:"0.014",v:"5447"},{o:"0.014",h:"0.015",l:"0.014",c:"0.015",v:"6628"}]
+    },
+    {
+      question: "Will the US confirm that aliens exist by...?",
+      slug: "will-the-us-confirm-that-aliens-exist-before-2027", condition_id: "0x747dc809fb79e1b05be09c42d6179459a58de2ef3e40f02484a4e1260f741f75",
+      url: "https://polymarket.com/event/will-the-us-confirm-that-aliens-exist-before-2027",
+      category: "Other", end_date: "2026-12-31", liquidity: "1797970", volume_total: "60721195",
+      description: "This market will resolve to \"Yes\" if the President of the United States, any member of the Cabinet of the United States, any member of the Joint Chiefs of Staff, or any US federal agency definitively states that extra\u2026",
+      yes_token_id: "107505882767731489358349912513945399560393482969656700824895970500493757150417", no_token_id: "7305630249804085635496399869905769372294302716159034447326228509068694952392",
+      yes_price: "0.085", volume_24h: "473830", net_flow: "18953",
+      depth: { bids: [["0.084","2957","2957"],["0.083","4429","7386"],["0.082","3911","11297"]], asks: [["0.086","2178","2178"],["0.087","1825","4003"],["0.088","3145","7148"]] },
+      candles: [{o:"0.076",h:"0.080",l:"0.076",c:"0.079",v:"14830"},{o:"0.079",h:"0.081",l:"0.079",c:"0.081",v:"10612"},{o:"0.081",h:"0.082",l:"0.080",c:"0.081",v:"10857"},{o:"0.081",h:"0.082",l:"0.081",c:"0.082",v:"14853"},{o:"0.082",h:"0.084",l:"0.081",c:"0.083",v:"7369"},{o:"0.083",h:"0.084",l:"0.082",c:"0.083",v:"14876"},{o:"0.083",h:"0.085",l:"0.083",c:"0.084",v:"5154"},{o:"0.084",h:"0.086",l:"0.084",c:"0.085",v:"17221"}]
+    },
+    {
+      question: "Will Jesus Christ return before 2027?",
+      slug: "will-jesus-christ-return-before-2027", condition_id: "0x0b4cc3b739e1dfe5d73274740e7308b6fb389c5af040c3a174923d928d134bee",
+      url: "https://polymarket.com/event/will-jesus-christ-return-before-2027",
+      category: "Other", end_date: "2026-12-31", liquidity: "832315", volume_total: "64266865",
+      description: "This market will resolve to \"Yes\" if The Second Coming of Jesus Christ occurs by December 31, 2026, 11:59 PM ET. Otherwise, this market will resolve to \"No\".  The resolution source for this market will be a consensus\u2026",
+      yes_token_id: "69324317355037271422943965141382095011871956039434394956830818206664869608517", no_token_id: "51797157743046504218541616681751597845468055908324407922581755135522797852101",
+      yes_price: "0.019", volume_24h: "29570", net_flow: "1182",
+      depth: { bids: [["0.018","2520","2520"],["0.018","2068","4588"],["0.017","1883","6471"]], asks: [["0.021","5830","5830"],["0.021","4671","10501"],["0.022","2613","13114"]] },
+      candles: [{o:"0.015",h:"0.016",l:"0.015",c:"0.016",v:"3451"},{o:"0.016",h:"0.017",l:"0.016",c:"0.017",v:"3980"},{o:"0.017",h:"0.018",l:"0.017",c:"0.018",v:"17163"},{o:"0.018",h:"0.018",l:"0.017",c:"0.018",v:"17620"},{o:"0.018",h:"0.019",l:"0.018",c:"0.019",v:"6633"},{o:"0.019",h:"0.019",l:"0.018",c:"0.019",v:"6935"},{o:"0.019",h:"0.019",l:"0.019",c:"0.019",v:"11305"},{o:"0.019",h:"0.020",l:"0.019",c:"0.019",v:"10763"}]
+    },
+    {
+      question: "Will the U.S. invade Iran before 2027?",
+      slug: "will-the-us-invade-iran-before-2027", condition_id: "0x5db999fad322cea2914535aae5517060c3f80ad6d8c0231cde2124a434d16846",
+      url: "https://polymarket.com/event/will-the-us-invade-iran-before-2027",
+      category: "Politics", end_date: "2026-12-31", liquidity: "260952", volume_total: "38934813",
+      description: "This market will resolve to \"Yes\" if the United States commences a military offensive intended to establish control over any portion of Iran by December 31, 2026, 11:59 PM ET. Otherwise, this market will resolve to \"N\u2026",
+      yes_token_id: "55115078421062885512539156303747803058407616201213034911037320915726138659123", no_token_id: "1910830010387565971650098373488592514702818137344973088263643820608151819241",
+      yes_price: "0.14", volume_24h: "54975", net_flow: "2199",
+      depth: { bids: [["0.13","3583","3583"],["0.12","2123","5706"],["0.11","1528","7234"]], asks: [["0.15","3179","3179"],["0.16","5399","8578"],["0.17","3762","12340"]] },
+      candles: [{o:"0.11",h:"0.12",l:"0.11",c:"0.12",v:"9919"},{o:"0.12",h:"0.13",l:"0.12",c:"0.13",v:"3433"},{o:"0.13",h:"0.13",l:"0.13",c:"0.13",v:"6268"},{o:"0.13",h:"0.13",l:"0.13",c:"0.13",v:"8065"},{o:"0.13",h:"0.14",l:"0.13",c:"0.14",v:"17865"},{o:"0.14",h:"0.14",l:"0.14",c:"0.14",v:"8035"},{o:"0.14",h:"0.14",l:"0.14",c:"0.14",v:"13060"},{o:"0.14",h:"0.15",l:"0.14",c:"0.14",v:"16421"}]
+    },
+    {
+      question: "World Cup Winner ",
+      slug: "world-cup-winner", condition_id: "0x7976b8dbacf9077eb1453a62bcefd6ab2df199acd28aad276ff0d920d6992892",
+      url: "https://polymarket.com/event/world-cup-winner",
+      category: "Sports", end_date: "2026-07-20", liquidity: "276309678", volume_total: "3363103543",
+      description: "This market will resolve according to the national team that wins the 2026 FIFA World Cup.  If at any point it becomes impossible for this team to win the FIFA World Cup based on the rules of FIFA (e.g., they are elim\u2026",
+      yes_token_id: "4394372887385518214471608448209527405727552777602031099972143344338178308080", no_token_id: "112680630004798425069810935278212000865453267506345451433803052322987302357330",
+      yes_price: "0.11", volume_24h: "91829734", net_flow: "3673189",
+      depth: { bids: [["0.10","4071","4071"],["0.09","4101","8172"],["0.08","5159","13331"]], asks: [["0.12","3430","3430"],["0.13","2427","5857"],["0.14","5206","11063"]] },
+      candles: [{o:"0.09",h:"0.10",l:"0.09",c:"0.10",v:"8064"},{o:"0.10",h:"0.10",l:"0.10",c:"0.10",v:"13601"},{o:"0.10",h:"0.10",l:"0.10",c:"0.10",v:"3775"},{o:"0.10",h:"0.11",l:"0.10",c:"0.10",v:"11446"},{o:"0.10",h:"0.11",l:"0.10",c:"0.11",v:"13937"},{o:"0.11",h:"0.11",l:"0.11",c:"0.11",v:"12787"},{o:"0.11",h:"0.11",l:"0.11",c:"0.11",v:"3403"},{o:"0.11",h:"0.11",l:"0.11",c:"0.11",v:"6498"}]
+    },
+    {
+      question: "Democratic Presidential Nominee 2028",
+      slug: "democratic-presidential-nominee-2028", condition_id: "0xc8f1cf5d4f26e0fd9c8fe89f2a7b3263b902cf14fde7bfccef525753bb492e47",
+      url: "https://polymarket.com/event/democratic-presidential-nominee-2028",
+      category: "Politics", end_date: "2028-11-07", liquidity: "64719559", volume_total: "1216723052",
+      description: "This market will resolve to \u201cYes\u201d if the named individual wins and accepts the 2028 nomination of the Democratic Party for U.S. president. Otherwise, this market will resolve to \u201cNo\u201d.  The resolution source for this m\u2026",
+      yes_token_id: "60590045489347122735554346200880179420435533609307820342798544098823516727807", no_token_id: "76005700027045000587004110133818166617024719626220722682005164003117993034812",
+      yes_price: "0.011", volume_24h: "796170", net_flow: "31846",
+      depth: { bids: [["0.010","3535","3535"],["0.009","5658","9193"],["0.008","3785","12978"]], asks: [["0.011","4018","4018"],["0.013","3595","7613"],["0.014","4143","11756"]] },
+      candles: [{o:"0.009",h:"0.009",l:"0.009",c:"0.009",v:"17245"},{o:"0.009",h:"0.010",l:"0.009",c:"0.010",v:"15762"},{o:"0.010",h:"0.010",l:"0.010",c:"0.010",v:"6537"},{o:"0.010",h:"0.010",l:"0.010",c:"0.010",v:"12973"},{o:"0.010",h:"0.010",l:"0.010",c:"0.010",v:"14285"},{o:"0.010",h:"0.011",l:"0.010",c:"0.010",v:"11813"},{o:"0.010",h:"0.010",l:"0.010",c:"0.010",v:"4143"},{o:"0.010",h:"0.011",l:"0.010",c:"0.011",v:"7858"}]
+    },
+    {
+      question: "Will a brand-new market with no order book resolve YES?",
+      condition_id: "0x000000",
+      category: "Other", end_date: "2026-06-29", liquidity: "12000", volume_total: "30000",
+      description: "Low-liquidity example with no link, no book and no price history — shows the dashboard's empty states and the graceful no-Polymarket-link path.",
+      yes_token_id: "", no_token_id: "",
+      yes_price: "0.50", volume_24h: "300", net_flow: "0",
+      depth: { bids: [], asks: [] },
+      candles: []
+    }
+  
+  ],
+  recommendations: [
+    {
+      question: "Netanyahu out by...?", slug: "netanyahu-out-before-2027",
+      url: "https://polymarket.com/event/netanyahu-out-before-2027",
+      outcome: "YES", action: "BUY", target_price: "0.47",
+      strategy: "risk-free-arb", status: "executed", size_usd: "8", edge: "~3%", order_id: "0xa1b2…ff01",
+      confidence: "high", confidence_score: "0.9",
+      rationale: "Structural arb — YES+NO summed below 1.00; the risk gate auto-executed within limits after a matching dry-run.",
+      signals: ["sum_of_outcomes 0.97", "edge 3%", "liq $20k", "slippage 0.1%"]
+    },
+    {
+      question: "How many Fed rate cuts in 2026?", slug: "how-many-fed-rate-cuts-in-2026",
+      url: "https://polymarket.com/event/how-many-fed-rate-cuts-in-2026",
+      outcome: "YES", action: "BUY", target_price: "0.77",
+      strategy: "momentum", status: "pending", size_usd: "10", edge: "~4%",
+      confidence: "high", confidence_score: "0.78",
+      rationale: "Strong one-directional inflow as rate-cut odds firm; tight spread, deep bid support. Directional → the gate escalates it for your approval before it fills.",
+      signals: ["momentum +6pts/3d", "net inflow", "spread 1¢"]
+    },
+    {
+      question: "MLB World Series Champion 2026", slug: "mlb-world-series-champion-2026",
+      url: "https://polymarket.com/event/mlb-world-series-champion-2026",
+      outcome: "YES", action: "WATCH", target_price: "0.135",
+      strategy: "mean-reversion", status: "skipped",
+      confidence: "low", confidence_score: "0.35",
+      rationale: "Flagged by mean-reversion but below the confidence/liquidity floor, so the gate skipped it. Listed for transparency.",
+      signals: ["below conf floor", "thin depth"]
+    }
+  ],
+  account: {
+    wallet: { signer_eoa: "0x1a2b…c3d4", deposit_wallet: "0x9377…a1b2", note: "deposit wallet holds funds & trades" },
+    balance: { cash: "1234.567", raw: "1234567000" },
+    value: { total: "2050.10", user: "0x9377…a1b2" },
+    positions: [
+      { title: "Will Brazil win the 2026 World Cup?", outcome: "Yes", size: "30", avg_price: "0.55", cur_price: "0.67", current_value: "20.10", cash_pnl: "3.60", percent_pnl: "21.8" },
+      { title: "Will France win the 2026 World Cup?", outcome: "Yes", size: "50", avg_price: "0.26", cur_price: "0.238", current_value: "11.90", cash_pnl: "-1.10", percent_pnl: "-8.5" },
+      { title: "Will the Fed cut rates in 2026?", outcome: "No", size: "100", avg_price: "0.40", cur_price: "0.43", current_value: "43.00", cash_pnl: "3.00", percent_pnl: "7.5" }
+    ],
+    orders: [
+      { id: "0xord1aa…ff01", side: "BUY", outcome: "Yes", price: "0.60", original_size: "10", size_matched: "4", status: "LIVE" },
+      { id: "0xord2bb…ff02", side: "SELL", outcome: "No", price: "0.45", original_size: "20", size_matched: "0", status: "LIVE" }
+    ],
+    trades: [
+      { matched_at: "2026-06-27T11:25:00Z", side: "BUY", outcome: "Yes", price: "0.58", size: "10", status: "CONFIRMED" },
+      { matched_at: "2026-06-27T09:02:00Z", side: "BUY", outcome: "No", price: "0.40", size: "100", status: "CONFIRMED" },
+      { matched_at: "2026-06-26T18:40:00Z", side: "SELL", outcome: "Yes", price: "0.63", size: "15", status: "CONFIRMED" }
+    ]
+  }
+};
+/* === POLYMARKET_DATA_END === */
+
+(function(){
+  "use strict";
+  var D = (typeof DATA !== "undefined" && DATA) ? DATA : null;
+  var YES="#35D6A0", NO="#FF6B5C";
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]; }); }
+  function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+  function pct(v){ return Math.round(num(v)*100); }
+  function usd(v){ return "$"+num(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function compact(v){ var n=Math.abs(num(v));
+    if(n>=1e9) return (n/1e9).toFixed(1)+"B"; if(n>=1e6) return (n/1e6).toFixed(1)+"M";
+    if(n>=1e3) return (n/1e3).toFixed(1)+"k"; return String(Math.round(n)); }
+  function fmtTick(v){ return v.toFixed(3).replace(/0+$/,"").replace(/\.$/,""); }
+  function shortTime(iso){ if(!iso) return "—"; var d=new Date(iso); return isNaN(d)?esc(iso):d.toISOString().slice(0,16).replace("T"," "); }
+  function marketUrl(m){
+    var u = (m&&m.url) ? String(m.url) : (m&&m.slug) ? "https://polymarket.com/event/"+encodeURIComponent(m.slug) : "";
+    return /^https:\/\/(www\.)?polymarket\.com\//.test(u) ? u : null;   // only real polymarket.com links
+  }
+  function totalVol(m){ return num(m.volume_total!=null&&m.volume_total!==""?m.volume_total:m.volume_24h); }
+  function nowTs(){ var g=D&&D.meta&&D.meta.generated_at, t=g?new Date(g).getTime():NaN; return isFinite(t)?t:0; }
+  function timeLeft(m){
+    if(!m.end_date) return null;
+    var e=new Date(m.end_date).getTime(); if(!isFinite(e)) return null;
+    var diff=e-nowTs(); if(diff<=0) return {txt:"Ended", cls:"ended"};
+    var days=diff/86400000;
+    if(days<1) return {txt:"Today", cls:"soon"};
+    if(days<2) return {txt:"1d left", cls:"soon"};
+    if(days<14) return {txt:Math.round(days)+"d left", cls:days<=3?"soon":""};
+    if(days<60) return {txt:Math.round(days/7)+"w left", cls:""};
+    if(days<365) return {txt:Math.round(days/30)+"mo left", cls:""};
+    return {txt:Math.round(days/365)+"y left", cls:""};
+  }
+
+  /* ---------- visuals ---------- */
+  function candleSVG(candles){
+    if(!candles || !candles.length) return null;
+    var n=candles.map(function(c){ return {o:num(c.o),h:num(c.h),l:num(c.l),c:num(c.c),v:num(c.v)}; });
+    var w=300, hp=46, hv=12, gap=5, p=3;
+    var lo=Math.min.apply(null,n.map(function(c){return c.l;}));
+    var hi=Math.max.apply(null,n.map(function(c){return c.h;}));
+    var span=(hi-lo)||1, maxV=Math.max.apply(null,n.map(function(c){return c.v;}))||1;
+    var slot=w/n.length, bw=Math.max(2,Math.min(slot*0.62,9));
+    var yP=function(v){ return p+(1-(v-lo)/span)*(hp-2*p); };
+    var bars="";
+    n.forEach(function(c,k){
+      var cx=k*slot+slot/2, up=c.c>=c.o, col=up?YES:NO;
+      var top=Math.min(yP(c.o),yP(c.c)), bh=Math.max(1,Math.abs(yP(c.c)-yP(c.o)));
+      bars+='<line x1="'+cx.toFixed(1)+'" y1="'+yP(c.h).toFixed(1)+'" x2="'+cx.toFixed(1)+'" y2="'+yP(c.l).toFixed(1)+'" stroke="'+col+'" stroke-width="1" opacity="0.8" vector-effect="non-scaling-stroke"/>';
+      bars+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" fill="'+col+'" rx="0.5"/>';
+      var vh=Math.max(0.6,(c.v/maxV)*hv);
+      bars+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+(hp+gap+(hv-vh)).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+vh.toFixed(1)+'" fill="'+col+'" opacity="0.28"/>';
+    });
+    var H=hp+gap+hv;
+    return '<svg class="spark" viewBox="0 0 '+w+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+      '<line x1="0" y1="'+(hp+gap/2).toFixed(1)+'" x2="'+w+'" y2="'+(hp+gap/2).toFixed(1)+'" stroke="var(--line-soft)" stroke-width="1" vector-effect="non-scaling-stroke"/>'+
+      bars+'</svg>';
+  }
+  function sparkSVG(closes, i){
+    if(!closes || closes.length<2) return '<div class="empty-mini">no price history yet</div>';
+    var n=closes.map(num), w=300, h=42, p=3;
+    var mn=Math.min.apply(null,n), mx=Math.max.apply(null,n), span=(mx-mn)||1;
+    var xy=n.map(function(v,k){ return [p+(k/(n.length-1))*(w-2*p), p+(1-(v-mn)/span)*(h-2*p)]; });
+    var line=xy.map(function(q){return q[0].toFixed(1)+","+q[1].toFixed(1);}).join(" ");
+    var area="M"+xy[0][0].toFixed(1)+","+(h-1)+" L"+line.replace(/ /g," L")+" L"+xy[xy.length-1][0].toFixed(1)+","+(h-1)+" Z";
+    var up=n[n.length-1]>=n[0], col=up?YES:NO, last=xy[xy.length-1];
+    return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" aria-hidden="true">'+
+      '<defs><linearGradient id="sg'+i+'" x1="0" y1="0" x2="0" y2="1">'+
+      '<stop offset="0" stop-color="'+col+'" stop-opacity="0.20"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+area+'" fill="url(#sg'+i+')"/>'+
+      '<polyline points="'+line+'" fill="none" stroke="'+col+'" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/>'+
+      '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.6" fill="'+col+'"/></svg>';
+  }
+  function priceChart(m, i){ return candleSVG(m.candles) || sparkSVG(m.sparkline, i); }
+  function chartHead(m){ return '<div class="block-head"><span class="eyebrow">Price history</span>'+
+    ((m.candles&&m.candles.length)?'<span class="hint">OHLC · vol</span>':'')+'</div>'; }
+  function bookHTML(depth){
+    var bids=(depth&&depth.bids)||[], asks=(depth&&depth.asks)||[];
+    if(!bids.length && !asks.length) return '<div class="empty-mini">no order book yet</div>';
+    var lastCum=function(a){ return a.length?num(a[a.length-1][2]):0; };
+    var maxCum=Math.max(lastCum(bids),lastCum(asks))||1;
+    var row=function(lv,cls){ var wd=(num(lv[2])/maxCum)*100;
+      return '<div class="lvl '+cls+'"><span class="px">'+esc(lv[0])+'</span>'+
+        '<span class="bar" style="width:'+wd.toFixed(0)+'%"></span><span class="sz">'+compact(lv[2])+'</span></div>'; };
+    var html='<div class="book">';
+    asks.slice(0,5).slice().reverse().forEach(function(lv){ html+=row(lv,"ask"); });
+    if(bids.length && asks.length){
+      var spread=num(asks[0][0])-num(bids[0][0]), mid=(num(asks[0][0])+num(bids[0][0]))/2;
+      html+='<div class="spread"><span>spread <b>'+fmtTick(spread)+'</b></span><span>mid <b>'+fmtTick(mid)+'</b></span></div>';
+    }
+    bids.slice(0,5).forEach(function(lv){ html+=row(lv,"bid"); });
+    return html+'</div>';
+  }
+  function segMeter(score, conf){
+    var on=Math.round(Math.max(0,Math.min(1,num(score)))*10), seg="";
+    for(var k=0;k<10;k++) seg+='<i class="'+(k<on?"on":"")+'"></i>';
+    return '<div class="seg c-'+conf+'" aria-hidden="true">'+seg+'</div>';
+  }
+
+  /* ---------- Markets explorer ---------- */
+  var CAT_ORDER=["Sports","Politics","Crypto","Tech","Finance","Weather","Other"];
+  var SORTS=[{key:"hot",label:"24h Hot"},{key:"volume",label:"Total Volume"},{key:"liquidity",label:"Liquidity"},{key:"ending",label:"Ending Soon"}];
+  var sortCmp={
+    hot:function(a,b){return num(b.volume_24h)-num(a.volume_24h);},
+    volume:function(a,b){return totalVol(b)-totalVol(a);},
+    liquidity:function(a,b){return num(b.liquidity)-num(a.liquidity);},
+    ending:function(a,b){var ea=a.end_date?new Date(a.end_date).getTime():Infinity, eb=b.end_date?new Date(b.end_date).getTime():Infinity; return ea-eb;}
+  };
+  var mState={cat:"All", q:"", sort:"hot"};
+
+  function presentCats(){
+    var set={}; (D.markets||[]).forEach(function(m){ set[m.category||"Other"]=1; });
+    return ["All"].concat(CAT_ORDER.filter(function(c){return set[c];}));
+  }
+  function computeStats(){
+    var ms=D.markets||[], ov=D.meta&&D.meta.stats; if(ov) return ov;
+    var tot=0,v24=0,liq=0,active=0,n=nowTs();
+    ms.forEach(function(m){ tot+=totalVol(m); v24+=num(m.volume_24h); liq+=num(m.liquidity);
+      if(!m.end_date || new Date(m.end_date).getTime()>n) active++; });
+    return {total_volume:tot, volume_24h:v24, liquidity:liq, active:active, markets:ms.length};
+  }
+
+  function cardHTML(m, idx){
+    var yp=num(m.yes_price), yPct=pct(m.yes_price), nPct=100-yPct, url=marketUrl(m);
+    var d=m.depth||{}, bb=(d.bids&&d.bids[0]), ba=(d.asks&&d.asks[0]);
+    var spreadTxt=(bb&&ba)?'<span>spread <b>'+fmtTick(num(ba[0])-num(bb[0]))+'</b></span>':"";
+    var flow=num(m.net_flow), flowTxt=(m.net_flow==null||m.net_flow==="")?"":'<span>flow <b class="'+(flow>=0?"pos":"neg")+'">'+(flow>=0?"+":"−")+"$"+compact(flow)+'</b></span>';
+    var vol=m.volume_24h?'<span>24h vol <b>$'+compact(m.volume_24h)+'</b></span>':"";
+    var tl=timeLeft(m), tlHTML=tl?'<span class="mtime '+tl.cls+'">'+esc(tl.txt)+'</span>':"";
+    var tag=m.category?'<span class="mtag">'+esc(m.category)+'</span>':"";
+    return '<div class="mkt" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(m.question)+' — open details">'+
+      ((tag||tlHTML)?'<div class="mkt-top">'+tag+tlHTML+'</div>':'')+
+      '<div class="mkt-q">'+esc(m.question)+'</div>'+
+      '<div class="read">'+
+        '<div class="prob"><span class="n">'+yPct+'</span><span class="u">%</span><span class="tag yes">YES</span></div>'+
+        '<div class="prob-alt">NO '+nPct+'%</div>'+
+      '</div>'+
+      '<div class="gauge"><div class="fill" style="width:'+(yp*100).toFixed(1)+'%"></div><div class="mid"></div></div>'+
+      '<div class="gauge-labels"><span class="l">YES '+yp.toFixed(2)+'</span><span class="r">NO '+(1-yp).toFixed(2)+'</span></div>'+
+      '<div class="mkt-meta">'+vol+flowTxt+spreadTxt+'</div>'+
+      '<div class="mkt-block">'+chartHead(m)+priceChart(m,idx)+'</div>'+
+      '<div class="mkt-block"><div class="block-head"><span class="eyebrow">Order book</span></div>'+bookHTML(m.depth)+'</div>'+
+      (url?'<a class="trade" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" aria-label="Trade '+esc(m.question)+' on Polymarket">Trade on Polymarket <span class="ext" aria-hidden="true">↗</span></a>':'')+
+    '</div>';
+  }
+
+  function renderGrid(){
+    var grid=document.getElementById("mkt-grid"); if(!grid) return;
+    var ms=(D.markets||[]).slice();
+    if(mState.cat!=="All") ms=ms.filter(function(m){return (m.category||"Other")===mState.cat;});
+    if(mState.q){ var q=mState.q.toLowerCase(); ms=ms.filter(function(m){return (m.question||"").toLowerCase().indexOf(q)>=0;}); }
+    ms.sort(sortCmp[mState.sort]||sortCmp.hot);
+    document.getElementById("mkt-count").innerHTML='Markets <b>('+ms.length+')</b>';
+    grid.innerHTML = ms.length
+      ? ms.map(function(m){ return cardHTML(m, D.markets.indexOf(m)); }).join("")
+      : '<div class="empty" style="grid-column:1/-1;margin:0">No markets match your filters.</div>';
+  }
+
+  function renderMarkets(){
+    var el=document.getElementById("panel-markets"), ms=(D&&D.markets)||[];
+    if(!ms.length){ el.innerHTML='<div class="empty">No markets in this snapshot.</div>'; return; }
+    var st=computeStats();
+    var active=st.active!=null?st.active:(st.markets!=null?st.markets:ms.length);
+    var cats=presentCats().map(function(c){
+      return '<button class="cat" type="button" data-cat="'+esc(c)+'" aria-pressed="'+(mState.cat===c?"true":"false")+'">'+esc(c)+'</button>';
+    }).join("");
+    var sorts=SORTS.map(function(s){
+      return '<button class="sortb" type="button" data-sort="'+s.key+'" aria-pressed="'+(mState.sort===s.key?"true":"false")+'">'+esc(s.label)+'</button>';
+    }).join("");
+    el.innerHTML=
+      '<div class="mkt-stats">'+
+        '<div class="s"><div class="v">$'+compact(st.total_volume)+'</div><div class="k">Total volume</div></div>'+
+        '<div class="s"><div class="v">$'+compact(st.volume_24h)+'</div><div class="k">24h volume</div></div>'+
+        '<div class="s"><div class="v">$'+compact(st.liquidity)+'</div><div class="k">Liquidity</div></div>'+
+        '<div class="s"><div class="v"><span class="live-dot"></span>'+esc(active)+'</div><div class="k">Active markets</div></div>'+
+      '</div>'+
+      '<div class="cats" role="group" aria-label="Filter by category">'+cats+'</div>'+
+      '<div class="controls">'+
+        '<label class="search"><span class="ic" aria-hidden="true">⌕</span>'+
+          '<input id="mkt-search" type="search" placeholder="Search markets…" aria-label="Search markets" value="'+esc(mState.q)+'"></label>'+
+        '<div class="sorts" role="group" aria-label="Sort markets">'+sorts+'</div>'+
+      '</div>'+
+      '<div class="mkt-count" id="mkt-count"></div>'+
+      '<div class="grid" id="mkt-grid"></div>';
+
+    document.getElementById("mkt-search").addEventListener("input", function(){ mState.q=this.value; renderGrid(); });
+    el.querySelector(".cats").addEventListener("click", function(e){
+      var b=e.target.closest("button[data-cat]"); if(!b) return;
+      mState.cat=b.getAttribute("data-cat");
+      [].forEach.call(this.querySelectorAll(".cat"), function(x){ x.setAttribute("aria-pressed", x===b?"true":"false"); });
+      renderGrid();
+    });
+    el.querySelector(".sorts").addEventListener("click", function(e){
+      var b=e.target.closest("button[data-sort]"); if(!b) return;
+      mState.sort=b.getAttribute("data-sort");
+      [].forEach.call(this.querySelectorAll(".sortb"), function(x){ x.setAttribute("aria-pressed", x===b?"true":"false"); });
+      renderGrid();
+    });
+    var grid=document.getElementById("mkt-grid");
+    grid.addEventListener("click", function(e){
+      if(e.target.closest("a.trade")) return;
+      var card=e.target.closest(".mkt"); if(!card) return;
+      openModal(D.markets[+card.getAttribute("data-idx")], card);
+    });
+    grid.addEventListener("keydown", function(e){
+      if(e.key!=="Enter" && e.key!==" ") return;
+      if(e.target.closest("a.trade")) return;
+      var card=e.target.closest(".mkt"); if(!card) return;
+      e.preventDefault(); openModal(D.markets[+card.getAttribute("data-idx")], card);
+    });
+    renderGrid();
+  }
+
+  /* ---------- market detail modal ---------- */
+  function openModal(m, srcCard){
+    var lastFocus=srcCard||document.activeElement;
+    var yp=num(m.yes_price), url=marketUrl(m), tl=timeLeft(m);
+    var bg=document.createElement("div"); bg.className="modal-bg";
+    bg.innerHTML='<div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(m.question)+'">'+
+      '<div class="modal-head"><h2>'+esc(m.question)+'</h2><button class="modal-x" type="button" aria-label="Close">×</button></div>'+
+      ((m.category||tl)?'<div class="modal-tags">'+(m.category?'<span class="mtag">'+esc(m.category)+'</span>':'')+(tl?'<span class="mtime '+tl.cls+'">'+esc(tl.txt)+'</span>':'')+'</div>':'')+
+      '<p class="desc">'+esc(m.description||"Resolution criteria not provided in this snapshot.")+'</p>'+
+      '<div class="yesno">'+
+        '<div class="yn y"><div class="lab">YES</div><div class="px">'+(yp*100).toFixed(1)+'¢</div><div class="sub">per share</div></div>'+
+        '<div class="yn n"><div class="lab">NO</div><div class="px">'+((1-yp)*100).toFixed(1)+'¢</div><div class="sub">per share</div></div>'+
+      '</div>'+
+      '<div class="mstats">'+
+        '<div class="mstat"><div class="k">Total volume</div><div class="v">$'+compact(totalVol(m))+'</div></div>'+
+        '<div class="mstat"><div class="k">24h volume</div><div class="v">$'+compact(m.volume_24h)+'</div></div>'+
+        '<div class="mstat"><div class="k">Liquidity</div><div class="v">'+(m.liquidity?'$'+compact(m.liquidity):'—')+'</div></div>'+
+        '<div class="mstat"><div class="k">Ends</div><div class="v">'+(tl?esc(tl.txt):'—')+'</div></div>'+
+      '</div>'+
+      '<div class="modal-chart">'+chartHead(m)+priceChart(m,"m")+'</div>'+
+      (url?'<div class="modal-cta"><a class="cta-primary" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View on Polymarket <span aria-hidden="true">↗</span></a></div>'
+          :'<p class="desc" style="margin:0;text-align:center">No Polymarket link available for this market.</p>')+
+    '</div>';
+    document.body.appendChild(bg);
+    var xBtn=bg.querySelector(".modal-x"); xBtn.focus();
+    function close(){ if(bg.parentNode) bg.parentNode.removeChild(bg); document.removeEventListener("keydown", onKey);
+      if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+    function onKey(e){ if(e.key==="Escape"){ e.preventDefault(); close(); } }
+    document.addEventListener("keydown", onKey);
+    xBtn.addEventListener("click", close);
+    bg.addEventListener("mousedown", function(e){ if(e.target===bg) close(); });
+  }
+
+  /* ---------- Recommendations ---------- */
+  function renderRecs(){
+    var el=document.getElementById("panel-recs"), rs=(D&&D.recommendations)||[];
+    if(!rs.length){ el.innerHTML='<div class="empty">No recommendations in this snapshot.</div>'; return; }
+    el.innerHTML='<div class="recs">'+rs.map(function(r){
+      var act=(r.action||"WATCH").toUpperCase(), al=act.toLowerCase();
+      var conf=(r.confidence||"medium").toLowerCase();
+      var chips=((r.signals)||[]).map(function(s){return '<span class="chip">'+esc(s)+'</span>';}).join("");
+      var st=(r.status||"").toLowerCase();
+      var stTxt={executed:"Executed",pending:"Needs approval",skipped:"Skipped"}[st];
+      var statusHTML = stTxt ? '<span class="rstatus '+st+'">'+stTxt+'</span>' : "";
+      var meta=[];
+      if(r.strategy) meta.push('<span>'+esc(r.strategy)+'</span>');
+      if(r.size_usd!=null&&r.size_usd!=="") meta.push('<span>size <b>$'+esc(r.size_usd)+'</b></span>');
+      if(r.edge) meta.push('<span>edge <b>'+esc(r.edge)+'</b></span>');
+      var metaHTML = meta.length ? '<div class="rec-meta">'+meta.join("")+'</div>' : "";
+      var url=marketUrl(r), foot="";
+      if(r.order_id) foot+='<span class="rorder">order <b>'+esc(r.order_id)+'</b></span>';
+      if(url) foot+='<a class="rlink" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View on Polymarket <span class="ext" aria-hidden="true">↗</span></a>';
+      var footHTML = foot ? '<div class="rec-foot">'+foot+'</div>' : "";
+      return '<div class="rec a-'+al+'">'+
+        '<div class="top"><span class="badge b-'+al+'">'+esc(act)+'</span>'+statusHTML+
+          '<span class="target">'+esc(r.outcome||"")+(r.target_price?' @ <b>'+esc(r.target_price)+'</b>':"")+'</span></div>'+
+        '<div class="rec-q">'+esc(r.question)+'</div>'+
+        metaHTML+
+        '<div class="conf"><span class="lvl-txt c-'+conf+'">'+esc(conf)+'</span>'+segMeter(r.confidence_score,conf)+'</div>'+
+        (r.rationale?'<div class="rationale">'+esc(r.rationale)+'</div>':"")+
+        (chips?'<div class="chips">'+chips+'</div>':"")+
+        footHTML+
+      '</div>';
+    }).join("")+'</div>';
+  }
+
+  /* ---------- Account ---------- */
+  var sortState={};
+  function buildTable(tableId, rows, cols){
+    if(!rows || !rows.length) return null;
+    var st=sortState[tableId], view=rows.slice();
+    if(st){
+      var c=cols.filter(function(x){return x.key===st.key;})[0];
+      view.sort(function(a,b){ var av=a[st.key], bv=b[st.key], r;
+        if(c && c.type==="num") r=num(av)-num(bv); else r=String(av==null?"":av).localeCompare(String(bv==null?"":bv));
+        return st.dir==="desc"?-r:r; });
+    }
+    var thead="<tr>"+cols.map(function(c){
+      var aria=st&&st.key===c.key?' aria-sort="'+(st.dir==="asc"?"ascending":"descending")+'"':"";
+      var arr=st&&st.key===c.key?'<span class="arr">'+(st.dir==="asc"?"▲":"▼")+'</span>':"";
+      return '<th class="'+(c.type==="num"?"num":"")+'"'+aria+'><button type="button" data-table="'+tableId+'" data-key="'+c.key+'">'+esc(c.label)+arr+'</button></th>';
+    }).join("")+"</tr>";
+    var tbody=view.map(function(row){
+      return "<tr>"+cols.map(function(c){
+        var cell=c.render?c.render(row):esc(row[c.key]);
+        return '<td class="'+(c.type==="num"?"num ":"")+(c.label_col?"label":"")+'">'+cell+"</td>";
+      }).join("")+"</tr>";
+    }).join("");
+    return '<div class="tablewrap"><table><thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table></div>';
+  }
+  function sideCell(r){ var s=(r.side||"").toUpperCase(); return '<span class="'+(s==="BUY"?"s-buy":"s-sell")+'">'+esc(s)+'</span>'; }
+  function pnlCell(r){ var v=num(r.cash_pnl), p=num(r.percent_pnl), up=v>=0;
+    return '<span class="'+(up?"pos":"neg")+'">'+(up?"▲ ":"▼ ")+(up?"+":"−")+Math.abs(v).toFixed(2)+"  "+(up?"+":"−")+Math.abs(p).toFixed(1)+'%</span>'; }
+  function pill(v){ return '<span class="pill">'+esc(v)+'</span>'; }
+
+  // Account tab when no wallet is set up: render the setup walkthrough instead of a blank panel.
+  function accountSetupHTML(){
+    return '<div class="readme acct-empty"><div class="rm-sect">'+
+      '<h2 class="rm-htitle"><span class="i">○</span>No wallet connected</h2>'+
+      '<p class="rm-lead">Your <b>balance, positions, open orders &amp; trade history</b> appear here once a funded, '+
+        'trading-enabled wallet is configured. Markets and Recommendations work without one — to light this tab up, '+
+        'set a wallet up once:</p>'+
+      '<ol class="rm-steps">'+
+        '<li><span class="n">1</span><span class="b"><b>Give the agent your wallet’s private key.</b> It configures the signer '+
+          '(<code>poly setup</code>) so it can sign on your behalf — the key is never printed, echoed, or logged.</span></li>'+
+        '<li><span class="n">2</span><span class="b"><b>Log in to <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer">polymarket.com</a> '+
+          'with the same wallet</b> and complete the on-screen <b>“Enable Trading”</b> approvals.</span></li>'+
+        '<li><span class="n">3</span><span class="b"><b>Deposit USDC</b> on the website — funds live on your <b>deposit wallet</b>, not the signer address.</span></li>'+
+        '<li><span class="n">4</span><span class="b"><b>Verify &amp; regenerate.</b> Ask the agent to run <code>wallet show</code> + <code>clob balance</code>, '+
+          'then regenerate this dashboard to populate the tab.</span></li>'+
+      '</ol>'+
+      '<p class="rm-note">A brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> '+
+        'until steps 2–3 are done. Full walkthrough on the <button type="button" class="lnk" data-goto="readme">Readme</button> tab.</p>'+
+    '</div></div>';
+  }
+
+  function renderAccount(){
+    var el=document.getElementById("panel-account"), acc=(D&&D.account)||null;
+    if(!acc){ el.innerHTML=accountSetupHTML(); return; }
+    var bal=acc.balance||{}, val=acc.value||{}, w=acc.wallet||{};
+    var orders=acc.orders||[], positions=acc.positions||[], trades=acc.trades||[];
+    // portfolio value = positions' market value; fall back to summing current_value if value.total is missing/0
+    var pv = num(val.total) || positions.reduce(function(s,p){ return s+num(p.current_value); }, 0);
+    var html='<div class="readout">'+
+      '<div class="ro"><div class="k">Cash · USDC</div><div class="v">'+usd(bal.cash)+'</div></div>'+
+      '<div class="ro"><div class="k">Portfolio value</div><div class="v">'+usd(pv)+'</div></div>'+
+      '<div class="ro"><div class="k">Open orders</div><div class="v">'+orders.length+'</div></div>'+
+      '<div class="ro"><div class="k">Positions</div><div class="v">'+positions.length+'</div></div>'+
+    '</div>';
+    if(w.deposit_wallet) html+='<p class="deposit">deposit wallet <b>'+esc(w.deposit_wallet)+'</b>'+(w.note?' · '+esc(w.note):"")+'</p>';
+    html+='<h3 class="sect-h">Positions</h3>';
+    html+= buildTable("positions", positions, [
+      {key:"title",label:"Market",label_col:true,render:function(r){return esc(r.title);}},
+      {key:"outcome",label:"Out",render:function(r){return pill(r.outcome);}},
+      {key:"size",label:"Size",type:"num"},{key:"avg_price",label:"Avg",type:"num"},{key:"cur_price",label:"Cur",type:"num"},
+      {key:"current_value",label:"Value",type:"num",render:function(r){return usd(r.current_value);}},
+      {key:"cash_pnl",label:"PnL",type:"num",render:pnlCell}
+    ]) || '<div class="empty">No open positions.</div>';
+    html+='<h3 class="sect-h">Open orders</h3>';
+    html+= buildTable("orders", orders, [
+      {key:"id",label:"Order"},{key:"side",label:"Side",render:sideCell},
+      {key:"outcome",label:"Out",render:function(r){return pill(r.outcome);}},{key:"price",label:"Price",type:"num"},
+      {key:"size_matched",label:"Filled",type:"num",render:function(r){return esc(r.size_matched)+"/"+esc(r.original_size);}},
+      {key:"status",label:"Status",render:function(r){return pill(r.status);}}
+    ]) || '<div class="empty">No open orders.</div>';
+    html+='<h3 class="sect-h">Trade history</h3>';
+    html+= buildTable("trades", trades, [
+      {key:"matched_at",label:"Time",render:function(r){return shortTime(r.matched_at);}},
+      {key:"side",label:"Side",render:sideCell},{key:"outcome",label:"Out",render:function(r){return pill(r.outcome);}},
+      {key:"price",label:"Price",type:"num"},{key:"size",label:"Size",type:"num"},
+      {key:"status",label:"Status",render:function(r){return pill(r.status);}}
+    ]) || '<div class="empty">No trades yet.</div>';
+    el.innerHTML=html;
+  }
+  document.getElementById("panel-account").addEventListener("click", function(e){
+    var go=e.target.closest && e.target.closest("button[data-goto]");
+    if(go){ var tab=document.getElementById("tab-"+go.getAttribute("data-goto")); if(tab) activate(tab); return; }
+    var btn=e.target.closest && e.target.closest("button[data-table]"); if(!btn) return;
+    var t=btn.getAttribute("data-table"), k=btn.getAttribute("data-key"), cur=sortState[t];
+    sortState[t]=(cur&&cur.key===k)?{key:k,dir:cur.dir==="asc"?"desc":"asc"}:{key:k,dir:"asc"};
+    renderAccount();
+  });
+
+  /* ---------- tabs ---------- */
+  var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
+  function activate(tab){
+    tabs.forEach(function(t){ var on=t===tab;
+      t.setAttribute("aria-selected", on?"true":"false"); t.tabIndex=on?0:-1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden=!on; });
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener("click", function(){ activate(t); });
+    t.addEventListener("keydown", function(e){
+      var idx=e.key==="ArrowRight"?(i+1)%tabs.length:e.key==="ArrowLeft"?(i-1+tabs.length)%tabs.length:-1;
+      if(idx<0) return; e.preventDefault(); tabs[idx].focus(); activate(tabs[idx]);
+    });
+  });
+
+  /* example-query buttons → send to chat (no-op outside an agent host) */
+  (function(){
+    var rm=document.getElementById("panel-readme"); if(!rm) return;
+    rm.addEventListener("click", function(e){
+      var b=e.target.closest && e.target.closest("button.qbtn"); if(!b) return;
+      if(typeof window.sendPrompt==="function") window.sendPrompt(b.getAttribute("data-q")||"");
+    });
+  })();
+
+  /* ---------- readme: live odds tape ---------- */
+  function renderReadme(){
+    var el=document.getElementById("rm-tape"); if(!el) return;
+    var ms=(D&&D.markets)||[];
+    var src = ms.length ? ms.slice(0,16) : [
+      {question:"Will Brazil win the 2026 World Cup?",yes_price:"0.67"},
+      {question:"How many Fed rate cuts in 2026?",yes_price:"0.43"},
+      {question:"Will Bitcoin top $150k in 2026?",yes_price:"0.31"},
+      {question:"Democrats win the 2026 House?",yes_price:"0.58"},
+      {question:"Will GPT-6 ship in 2026?",yes_price:"0.22"},
+      {question:"US recession in 2026?",yes_price:"0.36"},
+      {question:"Will Spain win the 2026 World Cup?",yes_price:"0.11"},
+      {question:"Will Ethereum flip $6k in 2026?",yes_price:"0.40"}
+    ];
+    var row = src.map(function(m){
+      var p=Math.round(num(m.yes_price)*100), up=num(m.yes_price)>=0.5;
+      var q=(m.question||"").replace(/^Will\s+/i,"").replace(/\?+$/,"");
+      if(q.length>34) q=q.slice(0,33)+"…";
+      return '<span class="rm-tick">'+esc(q)+' <i class="'+(up?"y":"n")+'">'+p+'%</i></span>';
+    }).join('<span class="rm-sep">·</span>');
+    el.innerHTML = row + '<span class="rm-sep">·</span>' + row;   // duplicate → seamless marquee
+  }
+
+  /* ---------- boot ---------- */
+  function boot(){
+    if(!D || (!D.markets && !D.recommendations && !D.account)) document.getElementById("nodata").style.display="block";
+    var meta=(D&&D.meta)||{};
+    document.getElementById("walletLabel").textContent = meta.wallet_label || "no wallet";
+    document.getElementById("snapTime").textContent = "snapshot " + (meta.generated_at ? shortTime(meta.generated_at)+" UTC" : "—");
+    document.getElementById("cnt-markets").textContent = ((D&&D.markets)||[]).length || "";
+    document.getElementById("cnt-recs").textContent = ((D&&D.recommendations)||[]).length || "";
+    document.getElementById("refreshBtn").addEventListener("click", function(){
+      if(typeof window.sendPrompt==="function") window.sendPrompt("refresh my Polymarket dashboard");
+      else this.textContent="↻ ask the agent to regenerate";
+    });
+    renderReadme(); renderMarkets(); renderRecs(); renderAccount();
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
