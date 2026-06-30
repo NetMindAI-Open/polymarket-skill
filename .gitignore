@@ -8,6 +8,7 @@ docs/superpowers/
 *.swp
 .idea/
 .vscode/
+.playwright-mcp/
 
 # Python
 __pycache__/

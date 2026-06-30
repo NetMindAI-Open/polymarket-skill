@@ -16,9 +16,8 @@ Input (JSON on stdin):
                         confidence, liquidity_check:{...}, risks:[...], signal:{...},
                         gate:{decision:"auto"|"escalate"|"skip", order_id?}}, ... ],
     "enrichment":    { "<condition_id>": {url, category, end_date, description,
-                        volume_total, net_flow, depth, candles} },   # for the curated subset
+                        volume_total, net_flow, depth, candles} },   # for the shown markets
     "account":       {...} | null,   # null/empty when no wallet is set up -> Account tab shows setup steps
-    "top_n":         24,            # extra top-volume universe markets to include beyond the rec'd ones
     "generated_at":  "<UTC ISO>",
     "wallet_label":  "deposit 0x…",
     "stats":         {...} | null   # optional override of the stats strip
@@ -34,6 +33,44 @@ import sys
 
 # gate decision -> recommendation status pill
 _STATUS = {"auto": "executed", "escalate": "pending", "skip": "skipped"}
+
+# The Markets tab is simply the most-traded markets in the last 24h: rank the pool by 24h
+# volume and show the top MARKETS_LIMIT (or all of them, if the pool is smaller).
+MARKETS_LIMIT = 50
+
+# Liveness floor: markets quoting a YES probability at or below this (resolved / dead longshots
+# sitting near 0) are dropped. Top-by-volume rarely hits these, but it keeps the grid clean.
+MIN_YES_PRICE = 0.01
+
+# Plain-language, user-facing one-liners shown on the recommendation cards. The full specs
+# live in reference/strategies/*.md; these are the short "what is this play" gloss so a reader
+# understands *why it's an opportunity* without opening the spec.
+STRATEGY_NOTES = {
+    "momentum": "rides a strong recent price move, betting the trend keeps going",
+    "mean-reversion": "bets a sharp overshoot snaps back toward its recent average",
+    "spread-capture": "earns the gap between the buy and sell price by posting resting orders",
+    "smart-money": "follows large, one-directional buying that looks informed",
+    "risk-free-arb": "locks a guaranteed profit when YES + NO together cost less than $1",
+    "multi-outcome-arb": "locks a profit when a market's outcomes price below $1 in total",
+}
+
+# Why the risk gate set an opportunity aside — plain-language version of decide()'s reason
+# codes (keys must match risk_gate.py exactly). Turns "insufficient book depth at price" into
+# something a reader understands as a *risk*, not a code.
+GATE_REASON_NOTES = {
+    "confidence below report floor": "the signal was too weak to act on",
+    "market liquidity below floor": "too little money resting in this market to trade our size safely",
+    "insufficient book depth at price": "not enough resting orders at the target price, so filling would push the price against us",
+    "order notional over per-order cap": "the proposed order is larger than the per-trade limit",
+    "would breach per-run total cap": "buying it would push this scan past its total budget for the run",
+    "order would take too much resting depth": "the order would eat too large a share of the visible order book",
+}
+
+# Skipped/WATCH cards still sit in the "low" band, but show a small non-zero meter purely for
+# UX (an empty bar reads as broken). Intentionally loose: a stronger-but-gated candidate gets
+# 3 of 10 segments, a weak one gets 2 — the meter is a vibe, not a measurement.
+SKIP_METER_STRONG = "0.3"   # ~3 of 10 segments
+SKIP_METER_WEAK = "0.2"     # ~2 of 10 segments
 
 
 def _s(v):
@@ -52,6 +89,11 @@ def _num(v):
         return float(v)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _is_live(u):
+    """True if a market's YES probability clears MIN_YES_PRICE (filters dead/resolved markets)."""
+    return _num(u.get("yes_price")) > MIN_YES_PRICE
 
 
 def _compact(v):
@@ -91,13 +133,20 @@ def market_from_universe(u, enrich):
 
 
 def opportunity_to_recommendation(opp, universe_by_cond, enrich):
-    """Map a gated Opportunity into a recommendations[] entry."""
+    """Map a gated Opportunity into a recommendations[] entry.
+
+    A gate `skip` is no longer hidden: it is surfaced as a low-confidence
+    *watch* item whose first signal is the gate's reason, so the user still sees
+    the candidate and *why* it was set aside. `auto`/`escalate` keep their own
+    confidence band and meter.
+    """
     cond = opp.get("condition_id")
     u = universe_by_cond.get(cond, {})
     gate = opp.get("gate") or {}
     status = _STATUS.get(gate.get("decision", "escalate"), "pending")
+    skipped = status == "skipped"
     side = (opp.get("proposed_action") or {}).get("side", "BUY").upper()
-    action = "WATCH" if status == "skipped" else side
+    action = "WATCH" if skipped else side
 
     signals = []
     lc = opp.get("liquidity_check") or {}
@@ -115,13 +164,24 @@ def opportunity_to_recommendation(opp, universe_by_cond, enrich):
         "slug": opp.get("slug"),
         "outcome": (opp.get("outcome") or "yes").upper(),
         "action": action,
-        "confidence": confidence_band(opp.get("confidence")),
-        "confidence_score": _s(opp.get("confidence")),
+        # skip -> forced "low" band; the meter below is a small fixed UX fill, not the raw score
+        "confidence": "low" if skipped else confidence_band(opp.get("confidence")),
         "rationale": opp.get("thesis"),
         "signals": signals[:5],
         "strategy": opp.get("strategy"),
         "status": status,
     }
+    if skipped:
+        rec["confidence_score"] = SKIP_METER_STRONG if _num(opp.get("confidence")) >= 0.5 else SKIP_METER_WEAK
+    else:
+        rec["confidence_score"] = _s(opp.get("confidence"))
+    # what the play is (every card) + why the gate set it aside (skipped only) — plain language
+    note = STRATEGY_NOTES.get(opp.get("strategy"))
+    if note:
+        rec["strategy_note"] = note
+    if skipped:
+        reason = gate.get("reason")
+        rec["gate_note"] = GATE_REASON_NOTES.get(reason, reason) if reason else "set aside by the risk gate"
     price = (opp.get("proposed_action") or {}).get("price")
     if price is not None:
         rec["target_price"] = _s(price)
@@ -152,44 +212,15 @@ def build_data(payload):
     universe = payload.get("universe") or []
     opps = payload.get("opportunities") or []
     enrichment = payload.get("enrichment") or {}
-    top_n = int(payload.get("top_n", 30))
     by_cond = {u.get("condition_id"): u for u in universe}
 
-    # curated subset = every recommended market first, then top-N universe by 24h volume
-    rec_conds = [o.get("condition_id") for o in opps if o.get("condition_id")]
-    ranked = sorted(universe, key=lambda u: _num(u.get("volume_24h")), reverse=True)
-    target = len(set(rec_conds)) + top_n
-    chosen, seen = [], set()
-    for cond in rec_conds + [u.get("condition_id") for u in ranked]:
-        if cond and cond not in seen and cond in by_cond:
-            seen.add(cond)
-            chosen.append(by_cond[cond])
-        if len(chosen) >= target:
-            break
-
-    markets = [market_from_universe(u, enrichment.get(u.get("condition_id"))) for u in chosen]
-
-    # Enrich the grid with the most-traded markets in the last 24h (popularity, not anomaly).
-    # The scouted universe is a filtered/anomaly set; `trending` is a separate broad list the
-    # orchestrator pulls and ranks by 24h volume. Merge it in, deduped by condition_id, tagged
-    # so the template's category-driven chip/tag surfaces it with no template change.
-    trending = payload.get("trending") or []
-    trending_n = int(payload.get("trending_n", 12))
-    trending_top = sorted(trending, key=lambda u: _num(u.get("volume_24h")), reverse=True)[:trending_n]
-    market_by_cond = {m.get("condition_id"): m for m in markets}
-    for u in trending_top:
-        cond = u.get("condition_id")
-        if not cond:
-            continue
-        existing = market_by_cond.get(cond)
-        if existing is not None:
-            existing["trending"] = True            # already shown (also scouted) -> just flag it
-            continue
-        m = market_from_universe(u, enrichment.get(cond))
-        m["trending"] = True
-        m.setdefault("category", "🔥 Trending")     # no real category -> category-driven chip/tag for free
-        markets.append(m)
-        market_by_cond[cond] = m
+    # Markets tab = the most-traded markets in the last 24h, plain and simple: drop dead
+    # markets (YES <= MIN_YES_PRICE), rank the pool by 24h volume, take the top MARKETS_LIMIT.
+    # Recommendations live in their own tab and are NOT forced into this grid.
+    ranked = sorted((u for u in universe if _is_live(u)),
+                    key=lambda u: _num(u.get("volume_24h")), reverse=True)
+    markets = [market_from_universe(u, enrichment.get(u.get("condition_id")))
+               for u in ranked[:MARKETS_LIMIT]]
 
     recommendations = [opportunity_to_recommendation(o, by_cond, enrichment.get(o.get("condition_id"))) for o in opps]
 

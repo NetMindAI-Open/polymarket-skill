@@ -4,9 +4,15 @@
 **Auto-execute:** yes — structural arb (in the default allowlist).
 
 ## Data to pull
-- `assets/poly-mcp.sh list_markets '{"event_id":"…"}'` — all markets in the event.
-- `assets/poly-mcp.sh get_order_book '{"token_id":"…"}'` for each outcome's YES — real fillable prices, not mid.
-- `assets/poly-mcp.sh get_order_book_depth '{"token_id":"…","notional":100}'` — depth at the executable price.
+First shortlist from the shared universe: pick candidate **events** whose sibling rows (already carrying `event_id`, YES `token_id`s, `best_bid`/`best_ask`, `spread`, `liquidity`) hint that the basket's best-ask YES prices sum away from 1. Only then enrich that shortlist — never enrich every event as you scan. Tools needed (HOW to call them, not which):
+- `list_markets` (args `{"event_id":"…"}`) — all sibling markets/outcomes in the event.
+- `get_order_book` (args `{"token_id":"…"}`) per outcome's YES — real fillable prices, not mid.
+- `get_order_book_depth` (args `{"token_id":"…","notional":100}`) — depth at the executable price.
+
+Call them in ONE batched pass, not a per-token loop (each `poly-mcp.sh <tool>` spawn pays a ~5s handshake):
+- Prefer native `mcp__polymarket__*` tools when reachable — one persistent session, sub-second calls, no per-call handshake.
+- Otherwise pipe NDJSON into a single `assets/poly-mcp.sh --batch`: one line per call `{"id":"<event>:<token>:<tool>","tool":"get_order_book","args":{…}}`; read NDJSON back `{"id":…,"ok":true,"result":{…}}` (a failed leg → `{"ok":false,"error":…}` without aborting the batch). The `id` joins each book/depth back to its outcome leg.
+- This fan-out is wide — every sibling YES needs both an order book and a depth call, so a long event makes a large batch. Shard across ~4 parallel `poly-mcp.sh --batch` invocations to also hide the ~2s/call server latency (a 48-call run drops from >120s timing out to ~30s). See reference/mcp.md "Speed: never loop single calls".
 
 ## Signal logic
 - Sum of best-ask YES prices across all mutually-exclusive outcomes `< 1 − fees/slippage` → buy the basket (each YES) to lock a gain at resolution.

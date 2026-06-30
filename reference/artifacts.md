@@ -54,7 +54,6 @@ const DATA = {
     liquidity,                      // optional — stats strip + sort + modal
     volume_total,                   // optional — modal "Total Volume" + "Total Volume" sort (falls back to volume_24h)
     description,                    // optional — resolution text shown in the click-through detail modal
-    trending,                       // optional — true if merged from the 24h-popularity list (build_data.py); tags the card, and lacking a real category gets a "🔥 Trending" filter chip
     yes_price,                      // "0.67"  (probability = ×100)
     volume_24h, net_flow,           // optional, MCP get_market_stats ("" or omit→hidden)
     depth: { bids:[[price,size,cum]], asks:[[price,size,cum]] },  // MCP get_order_book_depth, ~6 levels/side; [] if none
@@ -75,6 +74,8 @@ const DATA = {
     // optional — from an opportunity-scan run (see build_data.py):
     status,                         // "executed" | "pending" | "skipped"  → status pill
     strategy,                       // e.g. "risk-free-arb"  → meta line
+    strategy_note,                  // plain-language gloss of the play → line under the meter (every card)
+    gate_note,                      // skipped only — plain-language "why set aside" → amber aside box
     size_usd,                       // proposed order size  → meta line
     edge,                           // e.g. "~3%"            → meta line
     order_id                        // filled order id (when status="executed")  → footer
@@ -105,7 +106,6 @@ const DATA = {
 | `markets[].liquidity` | MCP `get_market` / `get_market_stats` (or Gamma) — total book liquidity |
 | `markets[].volume_total` | lifetime volume (Gamma `volume` / `get_market`); modal "Total Volume" + sort |
 | `markets[].description` | the market's resolution criteria text (Gamma `description`); shown in the detail modal |
-| `markets[].trending` | the 24h-popularity merge in `build_data.py` (rows from `run.json.trending`, ranked by 24h volume) |
 | `meta.stats` (optional) | `{total_volume, volume_24h, liquidity, active}` to override the stats strip; omit and the template sums them from `markets[]` |
 | `recommendations[]` | your analysis, **or** an opportunity-scan run mapped by `assets/build_data.py` (see below) |
 | `account.wallet` | `poly -o json wallet show` (`api_wallet` → `deposit_wallet`) |
@@ -130,11 +130,10 @@ python3 assets/build_data.py --inject assets/dashboard-template.html < run.json 
 
 ```jsonc
 {
-  "generated_at": "<UTC ISO>", "wallet_label": "deposit 0x…", "top_n": 24, "trending_n": 12,
-  "universe": [ /* the merged scout universe rows (Step 1) */ ],
-  "trending": [ /* a separate broad pull ranked by 24h volume (popularity, NOT the anomaly screens); same row shape as universe */ ],
-  "opportunities": [ /* validated opportunities, each with the gate result attached:
-                        "gate": {"decision":"auto"|"escalate"|"skip", "order_id": "<if filled>"} */ ],
+  "generated_at": "<UTC ISO>", "wallet_label": "deposit 0x…",
+  "universe": [ /* the active-markets pool; the Markets tab is its top 50 rows by 24h volume */ ],
+  "opportunities": [ /* every gated opportunity — auto, escalate AND skip — each with the gate result:
+                        "gate": {"decision":"auto"|"escalate"|"skip", "reason":"…", "order_id": "<if filled>"} */ ],
   "enrichment": { "<condition_id>": { "url", "category", "end_date", "description",
                                       "volume_total", "net_flow", "depth", "candles" } },
   "account": { /* artifacts.md Account shape, or null */ }
@@ -142,14 +141,13 @@ python3 assets/build_data.py --inject assets/dashboard-template.html < run.json 
 ```
 
 What the mapper does:
-- **Curated subset** — `markets[]` = every recommended market **+** the top-`top_n` universe rows by
-  24h volume (deduped). Enrich only this subset with `candles`/`depth`/etc. via the MCP — never all
-  50–150, or the payload explodes.
-- **Trending merge** — `markets[]` is then enriched with the top-`trending_n` of the `trending` list
-  (a broad, by-24h-volume pull — popularity, *not* the anomaly screens), deduped by `condition_id` and
-  tagged `trending: true`. A hot market with no real `category` gets `category: "🔥 Trending"` so the
-  template's category chip/tag surfaces it (no template change). `screen_markets` has no raw-volume
-  sort, so pull a broad set (e.g. `sort_by="liquidity"`, high `limit`) and rank it by `volume_24h`.
+- **Markets tab** — `markets[]` = the **top `MARKETS_LIMIT` (50) `universe` rows by 24h volume**, with
+  dead markets (YES `≤ MIN_YES_PRICE`, 0.01 = 1%) dropped first. That's the whole rule: just the most-
+  traded markets in the last 24h. (Fewer than 50 live rows in the pool → show all of them.) Recommendations
+  are a **separate tab** and are **not** merged into this grid. Enrich only these shown markets with
+  `candles`/`depth`/etc. via the MCP — never all 50–150, or the payload explodes. `screen_markets` has no
+  raw-volume sort, so build the `universe` pool from a broad pull (e.g. `sort_by="liquidity"`, high `limit`)
+  and `build_data.py` ranks it by `volume_24h` and takes the top 50.
 - **Opportunity → recommendation** mapping:
 
   | Opportunity | → recommendation | rule |
@@ -157,11 +155,13 @@ What the mapper does:
   | `gate.decision` auto/escalate/skip | `status` executed/pending/skipped | status pill |
   | `proposed_action.side` | `action` | `WATCH` if skipped, else the side |
   | `proposed_action.price` / `size_usd` | `target_price` / `size_usd` | passthrough |
-  | `confidence` (0–1) | `confidence_score` + `confidence` band | ≥0.75 high · ≥0.5 medium · else low |
-  | `thesis` | `rationale` | passthrough |
+  | `confidence` (0–1) | `confidence_score` + `confidence` band | ≥0.75 high · ≥0.5 medium · else low. **Skip → forced `low` band** with a small fixed UX meter (3 bars if raw conf ≥0.5, else 2) rather than the raw score |
+  | `thesis` | `rationale` | passthrough — *why this market is a candidate* |
   | `strategy`, `edge_estimate` | `strategy`, `edge` | passthrough |
+  | `strategy` | `strategy_note` | plain-language gloss from `STRATEGY_NOTES` — *what the play is* (every card) |
+  | `gate.reason` (skip only) | `gate_note` | plain-language from `GATE_REASON_NOTES` — *why it was set aside* (amber aside box); unknown codes pass through verbatim |
   | `gate.order_id` | `order_id` | shown when executed |
-  | `liquidity_check` + `signal` + `risks` | `signals[]` | composed chips |
+  | `liquidity_check` + `signal` + `risks` | `signals[]` | composed chips — the **risks** live here |
   | — (joined from universe by `condition_id`) | `question` | Opportunity has no title |
   | `enrichment[cond].url` | `url` | **real event slug** so the link resolves |
 
@@ -169,7 +169,11 @@ What the mapper does:
   reflects everything scanned.
 
 **You still must fetch the enrichment** (event slug + category/end_date/description from Gamma; `depth`
-+ `candles` from the MCP) for the curated subset and pass it in — the mapper is pure and does no I/O.
++ `candles` from the MCP) for the 50 shown markets and pass it in — the mapper is pure and does no I/O.
+Fetch it fast: **one batched Gamma `curl`** (`condition_ids=a&condition_ids=b&…`) for all the metadata,
+and **native `mcp__polymarket__*` tools or one `poly-mcp.sh --batch` pass** for depth/candles/stats —
+never a per-call `poly-mcp.sh` loop (it re-pays the ~5s handshake each time). See
+[mcp.md](mcp.md#speed-never-loop-single-calls--go-native-or-batch).
 
 ---
 

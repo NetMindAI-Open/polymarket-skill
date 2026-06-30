@@ -5,10 +5,21 @@ before the book fully adjusts.
 **Auto-execute:** no — always escalate (directional).
 
 ## Data to pull
-- From the shared universe: candidates with high `price_change_pct` and `volume_ratio`.
-- `assets/poly-mcp.sh get_market_stats '{"condition_id":"…","interval":"24h"}'` — buy/sell flow.
-- `assets/poly-mcp.sh get_price_history '{"token_id":"…","interval":"1h"}'` — confirm a sustained move, not a single spike.
-- `assets/poly-mcp.sh get_order_book_depth '{"token_id":"…","notional":100}'` — depth/slippage for sizing.
+- Shortlist FIRST from the shared universe using fields already on each row — candidates with
+  high `price_change_pct` and `volume_ratio` (drop the rest before any enrichment).
+- Then gather these three per-shortlist enrichments in ONE batched pass (do NOT loop single
+  `poly-mcp.sh <tool>` calls — each pays a ~5s handshake):
+  - `get_market_stats {"condition_id":"…","interval":"24h"}` — buy/sell flow.
+  - `get_price_history {"token_id":"…","interval":"1h"}` — confirm a sustained move, not a single spike.
+  - `get_order_book_depth {"token_id":"…","notional":100}` — depth/slippage for sizing.
+- Prefer native `mcp__polymarket__*` tools when reachable (one persistent session, no per-call
+  handshake). Otherwise pipe ONE `poly-mcp.sh --batch` pass: NDJSON in
+  `{"id":"<condition_or_token>","tool":"…","args":{…}}`, NDJSON out
+  `{"id":…,"ok":true,"result":{…}}`; use `id` to join each result back to its market/token, and a
+  single failed call returns `{"ok":false,"error":…}` without aborting the batch.
+- Fan-out is ~3 calls × shortlist size; once that exceeds ~10–12 calls, shard across ~4 parallel
+  `poly-mcp.sh --batch` invocations (e.g. split the shortlist) to hide the ~2s/call server latency.
+- See reference/mcp.md "Speed: never loop single calls".
 
 ## Signal logic
 - Move is recent, large (`price_change_pct` well above the universe median), and backed by `volume_ratio > 3`.
