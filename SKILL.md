@@ -64,8 +64,13 @@ without asking for per-order human approval. Recommended flow for each trade:
    confirm it matches intent.
 3. **Submit.** Re-run with `--yes` (no `--dry-run`). Parse `{"result": "ACCEPTED order_id=… status=…"}`
    or `{"result": "REJECTED code=… message=…"}`, and the exit code.
-4. **Handle approvals.** If a submit fails with `InsufficientAllowanceError`, the wallet isn't approved
-   for trading — see *Wallet setup* below; do not retry blindly.
+4. **Handle approvals / flow errors.** Two distinct failures, two fixes:
+   - `maker address not allowed, use the deposit wallet flow` → the client is on the EOA flow; live
+     trading needs the **deposit-wallet (gasless) flow**, which requires a Relayer API key
+     (`POLYMARKET_RELAYER_API_KEY`, a UUID from polymarket.com → Settings → API Keys). Configure it, retry.
+   - `InsufficientAllowanceError` → the wallet isn't approved for trading. With the relayer flow set, run
+     **`poly approve`** once (gasless: sets the deposit-wallet approvals for the standard + neg-risk
+     exchanges), then retry. Otherwise see *Wallet setup* below. Do not retry blindly.
 
 Market-order side semantics: a market **BUY** spends `--usd`; a market **SELL** delivers `--size`.
 Mixing them is rejected up front.
@@ -85,8 +90,9 @@ pass `--dry-run`, but its live orders will fail until it is activated on Polymar
 >    owns it).
 > 2. **Deposit USDC** into the account. Funds live on the **deposit wallet**, not your signer address.
 > 3. Complete the on-screen **"Enable Trading" approvals**. This deploys your proxy/deposit wallet and
->    grants the USDC + conditional-token (CTF) allowances the exchange needs. These on-chain approvals
->    are easiest done on the website (gasless); doing them via CLI requires gas/relayer setup.
+>    grants the USDC + conditional-token (CTF) allowances the exchange needs. Easiest on the website
+>    (gasless). **CLI alternative:** with the relayer flow configured (`POLYMARKET_RELAYER_API_KEY`), run
+>    **`poly approve`** to set these approvals gaslessly — no browser, no gas.
 
 Until that's done, live orders fail with `InsufficientAllowanceError` or insufficient-balance — and a
 clean `--dry-run` is **not** proof of readiness (it only checks signing).
