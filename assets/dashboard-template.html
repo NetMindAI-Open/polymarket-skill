@@ -15,6 +15,7 @@
     --yes:#35D6A0; --yes-dim:rgba(53,214,160,.13); --yes-line:rgba(53,214,160,.30);
     --no:#FF6B5C; --no-dim:rgba(255,107,92,.13); --no-line:rgba(255,107,92,.30);
     --signal:#E7B25C; --signal-dim:rgba(231,178,92,.15);
+    --low:var(--signal); --low-dim:var(--signal-dim);   /* low band shares the amber */
     --display:'Space Grotesk','Segoe UI',system-ui,sans-serif;
     --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
     --body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
@@ -307,11 +308,17 @@
   .conf{display:flex;align-items:center;gap:10px;margin-bottom:12px}
   .conf .lvl-txt{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:.08em;
     text-transform:uppercase;width:64px}
-  .c-high{color:var(--yes)} .c-medium{color:var(--signal)} .c-low{color:var(--faint)}
+  .c-high{color:var(--yes)} .c-medium{color:var(--signal)} .c-low{color:var(--low)}
   .seg{display:flex;gap:3px;flex:1}
   .seg i{height:8px;flex:1;border-radius:1px;background:var(--line)}
-  .seg.c-high i.on{background:var(--yes)} .seg.c-medium i.on{background:var(--signal)} .seg.c-low i.on{background:var(--dim)}
+  .seg.c-high i.on{background:var(--yes)} .seg.c-medium i.on{background:var(--signal)} .seg.c-low i.on{background:var(--low)}
   .rationale{font-size:13.5px;color:var(--dim);line-height:1.6;margin-bottom:12px}
+  .rec-note{font-size:12.5px;color:var(--dim);line-height:1.55;margin:-4px 0 12px}
+  .rec-note b{font-family:var(--mono);font-weight:500;color:var(--text)}
+  .rec-aside{font-size:12.5px;color:var(--dim);line-height:1.5;margin:0 0 12px;
+    padding:9px 11px;border-radius:8px;background:var(--signal-dim);border:1px solid rgba(231,178,92,.28)}
+  .rec-aside b{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--signal);margin-right:8px}
   .chips{display:flex;flex-wrap:wrap;gap:6px}
   .chip{font-family:var(--mono);font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:3px 9px}
   .chip::before{content:"› ";color:var(--faint)}
@@ -621,6 +628,7 @@ const DATA = {
       url: "https://polymarket.com/event/netanyahu-out-before-2027",
       outcome: "YES", action: "BUY", target_price: "0.47",
       strategy: "risk-free-arb", status: "executed", size_usd: "8", edge: "~3%", order_id: "0xa1b2…ff01",
+      strategy_note: "locks a guaranteed profit when YES + NO together cost less than $1",
       confidence: "high", confidence_score: "0.9",
       rationale: "Structural arb — YES+NO summed below 1.00; the risk gate auto-executed within limits after a matching dry-run.",
       signals: ["sum_of_outcomes 0.97", "edge 3%", "liq $20k", "slippage 0.1%"]
@@ -630,6 +638,7 @@ const DATA = {
       url: "https://polymarket.com/event/how-many-fed-rate-cuts-in-2026",
       outcome: "YES", action: "BUY", target_price: "0.77",
       strategy: "momentum", status: "pending", size_usd: "10", edge: "~4%",
+      strategy_note: "rides a strong recent price move, betting the trend keeps going",
       confidence: "high", confidence_score: "0.78",
       rationale: "Strong one-directional inflow as rate-cut odds firm; tight spread, deep bid support. Directional → the gate escalates it for your approval before it fills.",
       signals: ["momentum +6pts/3d", "net inflow", "spread 1¢"]
@@ -639,9 +648,11 @@ const DATA = {
       url: "https://polymarket.com/event/mlb-world-series-champion-2026",
       outcome: "YES", action: "WATCH", target_price: "0.135",
       strategy: "mean-reversion", status: "skipped",
-      confidence: "low", confidence_score: "0.35",
-      rationale: "Flagged by mean-reversion but below the confidence/liquidity floor, so the gate skipped it. Listed for transparency.",
-      signals: ["below conf floor", "thin depth"]
+      strategy_note: "bets a sharp overshoot snaps back toward its recent average",
+      gate_note: "not enough resting orders at the target price, so filling would push the price against us",
+      confidence: "low", confidence_score: "0.3",
+      rationale: "Price jumped ~5pts in a day on thin late-season volume and looks stretched versus its 30-day average — a textbook mean-reversion candidate.",
+      signals: ["thin depth", "season far from over", "low liquidity"]
     }
   ],
   account: {
@@ -928,6 +939,8 @@ const DATA = {
       if(r.size_usd!=null&&r.size_usd!=="") meta.push('<span>size <b>$'+esc(r.size_usd)+'</b></span>');
       if(r.edge) meta.push('<span>edge <b>'+esc(r.edge)+'</b></span>');
       var metaHTML = meta.length ? '<div class="rec-meta">'+meta.join("")+'</div>' : "";
+      var noteHTML = r.strategy_note ? '<div class="rec-note"><b>'+esc(r.strategy||"strategy")+'</b> '+esc(r.strategy_note)+'</div>' : "";
+      var asideHTML = r.gate_note ? '<div class="rec-aside"><b>set aside</b>'+esc(r.gate_note)+'</div>' : "";
       var url=marketUrl(r), foot="";
       if(r.order_id) foot+='<span class="rorder">order <b>'+esc(r.order_id)+'</b></span>';
       if(url) foot+='<a class="rlink" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View on Polymarket <span class="ext" aria-hidden="true">↗</span></a>';
@@ -938,7 +951,9 @@ const DATA = {
         '<div class="rec-q">'+esc(r.question)+'</div>'+
         metaHTML+
         '<div class="conf"><span class="lvl-txt c-'+conf+'">'+esc(conf)+'</span>'+segMeter(r.confidence_score,conf)+'</div>'+
+        noteHTML+
         (r.rationale?'<div class="rationale">'+esc(r.rationale)+'</div>':"")+
+        asideHTML+
         (chips?'<div class="chips">'+chips+'</div>':"")+
         footHTML+
       '</div>';

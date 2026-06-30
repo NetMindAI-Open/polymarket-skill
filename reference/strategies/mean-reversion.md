@@ -4,10 +4,13 @@
 **Auto-execute:** no — always escalate (directional).
 
 ## Data to pull
-- From the shared universe: candidates with large `price_change_pct` but modest `volume_ratio`.
-- `assets/poly-mcp.sh get_price_history '{"token_id":"…","interval":"1h"}'` — locate the pre-spike level.
-- `assets/poly-mcp.sh get_trades '{"token_id":"…","limit":100}'` — is the move a few large prints or broad?
-- `assets/poly-mcp.sh get_market_stats '{"condition_id":"…","interval":"24h"}'` — flow balance.
+- Shortlist FIRST from the shared universe using fields already on each row — candidates with large `price_change_pct` but modest `volume_ratio` (plus `spread`, `liquidity`, `best_bid/ask`, token ids, `condition_id`). Only enrich the shortlist.
+- Then gather all three enrichment tools in ONE batched pass (3 calls per shortlisted candidate), joined by an `id` key — never loop single `poly-mcp.sh <tool>` calls as you scan:
+  - `get_price_history {"token_id":"…","interval":"1h"}` — locate the pre-spike level.
+  - `get_trades {"token_id":"…","limit":100}` — is the move a few large prints or broad?
+  - `get_market_stats {"condition_id":"…","interval":"24h"}` — flow balance.
+- Prefer the native `mcp__polymarket__*` tools (one persistent session, sub-second, no per-call handshake). Otherwise pipe NDJSON into ONE `poly-mcp.sh --batch` pass: one `{"id":"<cand>:<tool>","tool":"<tool>","args":{…}}` per line in, `{"id":…,"ok":true,"result":{…}}` per line out (a per-call `{"ok":false,"error":…}` does not abort the batch).
+- This fan-out is 3× the shortlist; once it grows past ~10–15 candidates (~30–45 calls), shard across ~4 parallel `poly-mcp.sh --batch` invocations to hide the ~2s/call server latency — a measured 48-call run dropped from >120s (per-call, timed out) to ~30s. See reference/mcp.md "Speed: never loop single calls".
 
 ## Signal logic
 - Sharp price move on **thin** volume (`volume_ratio` near or below 1) or driven by a handful of prints.
