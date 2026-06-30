@@ -37,6 +37,31 @@
 | *"Cancel all my open orders."* | `clob cancel-all` |
 | *"Scan Polymarket for opportunities."* | runs the multi-agent scan → ranked opportunities, auto-fires structural arbs within limits, escalates the rest |
 
+## 🖥️ The dashboard
+
+Ask *"make me a Polymarket dashboard"* — or run a scan — and the agent builds a **self-contained,
+interactive HTML artifact**: the hottest markets with live odds, candlesticks and order-book depth; the
+scan's gated recommendations; and your account. Everything is a frozen snapshot — regenerate for fresh
+data. <sub>[how it's built →](reference/artifacts.md)</sub>
+
+**Markets** — the 50 most-traded markets in the last 24h, each with price history + order book:
+
+<p align="center"><img src="assets/screenshots/poly-markets.png" width="600" alt="Polymarket dashboard — Markets tab: stats strip, category filters, and market cards with YES/NO odds, candlestick price history, and order-book depth"></p>
+
+**Recommendations** — the multi-agent scan's output, each tagged by the risk gate (**executed** /
+**needs-approval** / **watch**) with the strategy's rationale and the *why* behind every call:
+
+<p align="center"><img src="assets/screenshots/poly-recommendations.png" width="600" alt="Polymarket dashboard — Recommendations tab: three cards showing a risk-free-arb auto-executed, a momentum trade awaiting approval, and a mean-reversion watch item set aside by the gate"></p>
+
+<details>
+<summary><b>Account</b> — cash, portfolio value, positions, open orders & trade history (when a wallet is configured)</summary>
+
+<br>
+
+<p align="center"><img src="assets/screenshots/poly-account.png" width="600" alt="Polymarket dashboard — Account tab: balance readout plus positions, open orders, and trade-history tables with P&L"></p>
+
+</details>
+
 ## 📦 What's inside
 
 | File | Purpose |
@@ -81,24 +106,29 @@ claude mcp get polymarket      # verify → Status: ✔ Connected
 > Swap in your own bearer token. The skill reaches the server through `assets/poly-mcp.sh`, which reads
 > the URL + token from `~/.claude.json` and never echoes it — more in [reference/mcp.md](reference/mcp.md).
 
-**4. Install the skill:**
+**4. Install the skill — *just ask your agent.*** Open Claude Code in this folder and say:
+
+> *"Install this folder as a Claude Code skill: put it at `~/.claude/skills/polymarket` with `SKILL.md`
+> at the root, then tell me to restart."*
+
+The agent does the copy for you. Restart Claude Code and the skill activates whenever you mention
+Polymarket, prediction-market odds, or placing a bet. Developing the skill? Ask it to **symlink instead
+of copy** so your edits stay live. **OpenClaw / clawhub**: the same folder installs as an OpenClaw skill —
+users just need `poly` on their `PATH`.
+
+<details>
+<summary>Prefer to run it yourself?</summary>
 
 ```bash
-# Claude Code — drop it in so SKILL.md sits at the folder root
+# copy it in — SKILL.md must sit at the installed folder's root
 cp -R polymarket-skill ~/.claude/skills/polymarket
+
+# …or symlink if you'll keep developing it (edits stay live, no re-copy):
+ln -s "$(pwd)/polymarket-skill" ~/.claude/skills/polymarket
 ```
 
-Restart Claude Code; it activates whenever you mention Polymarket, prediction-market odds, or placing a
-bet. **OpenClaw / clawhub** — the same folder installs as an OpenClaw skill; users just need `poly` on
-their `PATH` via the one-liner above.
-
-> **Developing the skill itself?** Symlink instead of copying, so edits to your working tree are reflected
-> in the installed skill with no re-copy:
-> ```bash
-> ln -s "$(pwd)/polymarket-skill" ~/.claude/skills/polymarket
-> ```
-> Restart Claude Code after edits to reload (skills load at session start). `rm ~/.claude/skills/polymarket`
-> removes only the symlink, never your repo.
+`rm ~/.claude/skills/polymarket` removes only the copy/symlink, never your repo.
+</details>
 
 ## 🆕 New wallet? Activate it first
 
