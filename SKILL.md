@@ -129,21 +129,32 @@ Auto-executed orders always run `--dry-run` and a preview match before `--yes`. 
 live in `~/.config/polymarket/agent.json` (every key explained in [reference/config.md](reference/config.md));
 conservative defaults apply if absent, and the user may override limits inline for a run.
 
+**The dashboard is the deliverable — always emit it.** A scan is **not complete** until you render
+the visual dashboard artifact (orchestration **Step 7** → [reference/artifacts.md](reference/artifacts.md)).
+Build it **every run, by default**, without waiting to be asked; the ranked text table from Step 6 is only
+a short summary that accompanies it, never a substitute. The only time you skip the artifact is when the
+user explicitly says they want text only.
+
 **MCP access.** Reach the polymarket MCP through [assets/poly-mcp.sh](assets/poly-mcp.sh)
 (see [reference/mcp.md](reference/mcp.md)); native `mcp__polymarket__*` calls may be blocked
 by a health-check hook false positive.
 
 ## Dashboard artifact (visualize)
 
-When the user asks to **show / visualize / "make a dashboard" / "display my positions or markets"**,
-render the multi-tab HTML dashboard as an **Artifact** instead of printing JSON tables. The artifact is
-sandboxed — it **cannot** run `poly` or call the MCP — so you inject a data snapshot at generation time.
-Full procedure, `DATA` schema, and source map: [reference/artifacts.md](reference/artifacts.md).
+**Default to the dashboard — build it proactively, don't wait for a second ask.** Render the multi-tab
+HTML dashboard as an **Artifact** (instead of printing JSON/text tables) whenever you produce any of:
+a **scan result** (always — see *Opportunity scanning* above), **more than a couple of markets**, or a
+**positions/balance/portfolio** view — and of course whenever the user says show / visualize / "make a
+dashboard" / "display my positions or markets". When in doubt, build it. The artifact is sandboxed — it
+**cannot** run `poly` or call the MCP — so you inject a data snapshot at generation time. Full procedure,
+`DATA` schema, and source map: [reference/artifacts.md](reference/artifacts.md).
 
-1. **Fetch** what they asked to see: Markets → `markets get/search` (+ MCP `get_order_book_depth`,
-   `get_price_history`, `get_market_stats` for depth / OHLC candles / flow); Recommendations → your own
-   analysis; Account → `clob balance`, `data value`, `data positions`, `clob orders`, `clob trades`,
-   `wallet show` (skip and set `account: null` if no key is configured).
+1. **Fetch** what they asked to see: Markets → **the 50 most-traded markets in the last 24h** (pass them
+   as the `universe` pool — `build_data.py` ranks by `volume_24h` and takes the top 50), enriched via MCP
+   `get_order_book_depth` / `get_price_history` / `get_market_stats` for depth / OHLC candles / flow;
+   Recommendations → your own analysis (a separate tab — not merged into Markets); Account → `clob balance`,
+   `data value`, `data positions`, `clob orders`, `clob trades`, `wallet show` (skip and set
+   `account: null` if no key is configured).
 2. **Build** one `DATA` object (schema in artifacts.md). Keep numbers as the Decimal strings the sources
    return; stamp `meta.generated_at` = now. Unfetched lists → `[]`, skipped objects → `null`.
 3. **Inject** — read [assets/dashboard-template.html](assets/dashboard-template.html), replace only the
