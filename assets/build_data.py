@@ -15,11 +15,14 @@ Input (JSON on stdin):
                         proposed_action:{side,order_type,price,size_usd}, edge_estimate,
                         confidence, liquidity_check:{...}, risks:[...], signal:{...},
                         gate:{decision:"auto"|"escalate"|"skip", order_id?}}, ... ],
+                     # thesis + each risk may be a plain string OR bilingual {en, zh} (the
+                     # dashboard toggles language); strategy_note/gate_note are emitted bilingual.
     "enrichment":    { "<condition_id>": {url, category, end_date, description,
                         volume_total, net_flow, depth, candles} },   # for the shown markets
     "account":       {...} | null,   # null/empty when no wallet is set up -> Account tab shows setup steps
     "generated_at":  "<UTC ISO>",
     "wallet_label":  "deposit 0x…",
+    "lang":          "zh" | "en",    # dashboard default language (-> meta.lang); defaults to "zh"
     "stats":         {...} | null   # optional override of the stats strip
   }
 
@@ -44,26 +47,39 @@ MIN_YES_PRICE = 0.01
 
 # Plain-language, user-facing one-liners shown on the recommendation cards. The full specs
 # live in reference/strategies/*.md; these are the short "what is this play" gloss so a reader
-# understands *why it's an opportunity* without opening the spec.
+# understands *why it's an opportunity* without opening the spec. Bilingual {en, zh}: the
+# dashboard renders one side per the active language (default Chinese).
 STRATEGY_NOTES = {
-    "momentum": "rides a strong recent price move, betting the trend keeps going",
-    "mean-reversion": "bets a sharp overshoot snaps back toward its recent average",
-    "spread-capture": "earns the gap between the buy and sell price by posting resting orders",
-    "smart-money": "follows large, one-directional buying that looks informed",
-    "risk-free-arb": "locks a guaranteed profit when YES + NO together cost less than $1",
-    "multi-outcome-arb": "locks a profit when a market's outcomes price below $1 in total",
+    "momentum": {"en": "rides a strong recent price move, betting the trend keeps going",
+                 "zh": "顺着近期的强势价格走势,押注趋势会延续"},
+    "mean-reversion": {"en": "bets a sharp overshoot snaps back toward its recent average",
+                       "zh": "押注急涨或急跌会回归到近期均值"},
+    "spread-capture": {"en": "earns the gap between the buy and sell price by posting resting orders",
+                       "zh": "通过挂单赚取买价与卖价之间的价差"},
+    "smart-money": {"en": "follows large, one-directional buying that looks informed",
+                    "zh": "跟随看起来有信息优势的大额单边买入"},
+    "risk-free-arb": {"en": "locks a guaranteed profit when YES + NO together cost less than $1",
+                      "zh": "当 YES + NO 加起来不到 $1 时锁定无风险利润"},
+    "multi-outcome-arb": {"en": "locks a profit when a market's outcomes price below $1 in total",
+                          "zh": "当一个市场所有结果加总价格低于 $1 时锁定利润"},
 }
 
 # Why the risk gate set an opportunity aside — plain-language version of decide()'s reason
 # codes (keys must match risk_gate.py exactly). Turns "insufficient book depth at price" into
-# something a reader understands as a *risk*, not a code.
+# something a reader understands as a *risk*, not a code. Bilingual {en, zh}.
 GATE_REASON_NOTES = {
-    "confidence below report floor": "the signal was too weak to act on",
-    "market liquidity below floor": "too little money resting in this market to trade our size safely",
-    "insufficient book depth at price": "not enough resting orders at the target price, so filling would push the price against us",
-    "order notional over per-order cap": "the proposed order is larger than the per-trade limit",
-    "would breach per-run total cap": "buying it would push this scan past its total budget for the run",
-    "order would take too much resting depth": "the order would eat too large a share of the visible order book",
+    "confidence below report floor": {"en": "the signal was too weak to act on",
+                                      "zh": "信号太弱,不值得出手"},
+    "market liquidity below floor": {"en": "too little money resting in this market to trade our size safely",
+                                     "zh": "这个市场的盘子太小,放不下我们的下单量"},
+    "insufficient book depth at price": {"en": "not enough resting orders at the target price, so filling would push the price against us",
+                                         "zh": "目标价位上的挂单不够,成交会把价格推向不利的一侧"},
+    "order notional over per-order cap": {"en": "the proposed order is larger than the per-trade limit",
+                                          "zh": "拟下单金额超过了单笔上限"},
+    "would breach per-run total cap": {"en": "buying it would push this scan past its total budget for the run",
+                                       "zh": "买入会让本轮扫描超出总预算"},
+    "order would take too much resting depth": {"en": "the order would eat too large a share of the visible order book",
+                                                "zh": "这一单会吃掉盘口里太大比例的挂单"},
 }
 
 # Skipped/WATCH cards still sit in the "low" band, but show a small non-zero meter purely for
@@ -156,6 +172,8 @@ def opportunity_to_recommendation(opp, universe_by_cond, enrich):
         signals.append("slippage " + _s(lc["est_slippage"]))
     for key, val in (opp.get("signal") or {}).items():
         signals.append("%s %s" % (key, val))
+    # risks are agent prose — may be plain strings OR bilingual {en, zh}; pass through as-is
+    # (the template's tv() resolves the active language). Never stringify an object.
     for risk in (opp.get("risks") or []):
         signals.append(risk)
 
@@ -181,7 +199,10 @@ def opportunity_to_recommendation(opp, universe_by_cond, enrich):
         rec["strategy_note"] = note
     if skipped:
         reason = gate.get("reason")
-        rec["gate_note"] = GATE_REASON_NOTES.get(reason, reason) if reason else "set aside by the risk gate"
+        if not reason:
+            rec["gate_note"] = {"en": "set aside by the risk gate", "zh": "被风控闸门搁置"}
+        else:  # known code -> bilingual gloss; unknown code -> wrap raw string for both langs
+            rec["gate_note"] = GATE_REASON_NOTES.get(reason, {"en": reason, "zh": reason})
     price = (opp.get("proposed_action") or {}).get("price")
     if price is not None:
         rec["target_price"] = _s(price)
@@ -229,6 +250,7 @@ def build_data(payload):
             "generated_at": payload.get("generated_at"),
             "wallet_label": payload.get("wallet_label", "no wallet"),
             "currency": "USDC",
+            "lang": payload.get("lang", "zh"),   # dashboard default language (zh unless overridden)
             "stats": payload.get("stats") or compute_stats(universe),
         },
         "markets": markets,

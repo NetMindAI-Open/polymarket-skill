@@ -42,9 +42,16 @@ the template renders an explicit empty state ("No order book"; a null `account` 
 
 ## DATA schema
 
+**Bilingual (zh/en):** the dashboard ships both languages and toggles instantly via the header `中/EN`
+control, **defaulting to Chinese**. UI chrome is translated inside the template; *data* prose that you
+author — `rationale` and each `signals`/risk entry, plus `strategy_note`/`gate_note` — may be a plain
+string (same in both languages) **or** a bilingual object `{ "en": "…", "zh": "…" }`. Trading terms
+(`BUY/SELL/WATCH`, `HIGH/MEDIUM/LOW`, `YES/NO`) and market `question` titles stay English by design.
+
 ```js
 const DATA = {
-  meta: { generated_at: "<UTC ISO>", wallet_label: "deposit 0x…", currency: "USDC" },
+  meta: { generated_at: "<UTC ISO>", wallet_label: "deposit 0x…", currency: "USDC",
+          lang: "zh" },              // default dashboard language ("zh" | "en"); user can still toggle
 
   markets: [{                       // Tab A — one entry per market to surface
     question, slug, condition_id, yes_token_id, no_token_id,
@@ -69,13 +76,13 @@ const DATA = {
     target_price,                   // "0.67"
     confidence,                     // "high" | "medium" | "low"  (badge + meter color)
     confidence_score,               // "0.78"  (0–1, fills the meter)
-    rationale,                      // one or two sentences
-    signals: ["net_flow +45k/24h", "spread 2¢"],  // monospace chips
+    rationale,                      // one or two sentences — string OR {en,zh}
+    signals: ["net_flow +45k/24h", "spread 2¢"],  // monospace chips; each entry string OR {en,zh}
     // optional — from an opportunity-scan run (see build_data.py):
     status,                         // "executed" | "pending" | "skipped"  → status pill
     strategy,                       // e.g. "risk-free-arb"  → meta line
-    strategy_note,                  // plain-language gloss of the play → line under the meter (every card)
-    gate_note,                      // skipped only — plain-language "why set aside" → amber aside box
+    strategy_note,                  // gloss of the play → line under the meter (every card); {en,zh} from build_data
+    gate_note,                      // skipped only — "why set aside" → amber aside box; {en,zh} from build_data
     size_usd,                       // proposed order size  → meta line
     edge,                           // e.g. "~3%"            → meta line
     order_id                        // filled order id (when status="executed")  → footer
@@ -130,10 +137,12 @@ python3 assets/build_data.py --inject assets/dashboard-template.html < run.json 
 
 ```jsonc
 {
+  "lang": "zh",                       // default dashboard language ("zh" default | "en") -> meta.lang
   "generated_at": "<UTC ISO>", "wallet_label": "deposit 0x…",
   "universe": [ /* the active-markets pool; the Markets tab is its top 50 rows by 24h volume */ ],
   "opportunities": [ /* every gated opportunity — auto, escalate AND skip — each with the gate result:
-                        "gate": {"decision":"auto"|"escalate"|"skip", "reason":"…", "order_id": "<if filled>"} */ ],
+                        "gate": {"decision":"auto"|"escalate"|"skip", "reason":"…", "order_id": "<if filled>"};
+                        thesis + each risks entry may be a string OR bilingual {"en":"…","zh":"…"} */ ],
   "enrichment": { "<condition_id>": { "url", "category", "end_date", "description",
                                       "volume_total", "net_flow", "depth", "candles" } },
   "account": { /* artifacts.md Account shape, or null */ }
@@ -156,12 +165,12 @@ What the mapper does:
   | `proposed_action.side` | `action` | `WATCH` if skipped, else the side |
   | `proposed_action.price` / `size_usd` | `target_price` / `size_usd` | passthrough |
   | `confidence` (0–1) | `confidence_score` + `confidence` band | ≥0.75 high · ≥0.5 medium · else low. **Skip → forced `low` band** with a small fixed UX meter (3 bars if raw conf ≥0.5, else 2) rather than the raw score |
-  | `thesis` | `rationale` | passthrough — *why this market is a candidate* |
+  | `thesis` | `rationale` | passthrough (string or `{en,zh}`) — *why this market is a candidate* |
   | `strategy`, `edge_estimate` | `strategy`, `edge` | passthrough |
-  | `strategy` | `strategy_note` | plain-language gloss from `STRATEGY_NOTES` — *what the play is* (every card) |
-  | `gate.reason` (skip only) | `gate_note` | plain-language from `GATE_REASON_NOTES` — *why it was set aside* (amber aside box); unknown codes pass through verbatim |
+  | `strategy` | `strategy_note` | **bilingual** `{en,zh}` gloss from `STRATEGY_NOTES` — *what the play is* (every card) |
+  | `gate.reason` (skip only) | `gate_note` | **bilingual** `{en,zh}` from `GATE_REASON_NOTES` — *why it was set aside* (amber aside box); unknown codes wrapped verbatim |
   | `gate.order_id` | `order_id` | shown when executed |
-  | `liquidity_check` + `signal` + `risks` | `signals[]` | composed chips — the **risks** live here |
+  | `liquidity_check` + `signal` + `risks` | `signals[]` | composed chips — **risks** live here (each may be string or `{en,zh}`) |
   | — (joined from universe by `condition_id`) | `question` | Opportunity has no title |
   | `enrichment[cond].url` | `url` | **real event slug** so the link resolves |
 

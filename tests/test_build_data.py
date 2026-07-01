@@ -83,8 +83,9 @@ def test_skipped_surfaced_as_low_confidence_with_reason():
     assert rec["action"] == "WATCH"
     assert rec["confidence"] == "low"                  # forced low even though raw conf is high
     assert rec["confidence_score"] == build_data.SKIP_METER_STRONG   # small UX meter, not the raw score
-    # the gate code is rendered as a plain-language "why it was set aside" line
-    assert rec["gate_note"] == "too little money resting in this market to trade our size safely"
+    # the gate code is rendered as a bilingual plain-language "why it was set aside" line
+    assert rec["gate_note"]["en"] == "too little money resting in this market to trade our size safely"
+    assert rec["gate_note"]["zh"] == "这个市场的盘子太小,放不下我们的下单量"
 
 
 def test_skipped_meter_is_two_or_three_bars():
@@ -100,21 +101,46 @@ def test_skipped_unknown_reason_falls_back_to_raw():
     o = opp("skip")
     o["gate"]["reason"] = "some new reason not in the glossary"
     rec = build_data.opportunity_to_recommendation(o, by, None)
-    assert rec["gate_note"] == "some new reason not in the glossary"
+    # unknown code -> wrapped raw string in both languages (still a {en,zh} object)
+    assert rec["gate_note"] == {"en": "some new reason not in the glossary",
+                                "zh": "some new reason not in the glossary"}
 
 
 def test_skipped_without_reason_still_low():
     by = {u["condition_id"]: u for u in universe()}
     rec = build_data.opportunity_to_recommendation(opp("skip"), by, None)   # gate carries no reason
     assert rec["confidence"] == "low"
-    assert rec["gate_note"] == "set aside by the risk gate"
+    assert rec["gate_note"] == {"en": "set aside by the risk gate", "zh": "被风控闸门搁置"}
 
 
-def test_strategy_note_explains_the_play():
+def test_strategy_note_is_bilingual():
     by = {u["condition_id"]: u for u in universe()}
     rec = build_data.opportunity_to_recommendation(opp("auto"), by, None)   # strategy risk-free-arb
     assert rec["strategy_note"] == build_data.STRATEGY_NOTES["risk-free-arb"]
+    assert set(rec["strategy_note"]) == {"en", "zh"}    # bilingual object, not a bare string
     assert "gate_note" not in rec                       # only skipped items carry a gate note
+
+
+def test_bilingual_thesis_and_risk_pass_through_unchanged():
+    by = {u["condition_id"]: u for u in universe()}
+    o = opp("escalate")
+    o["thesis"] = {"en": "English thesis.", "zh": "中文论点。"}
+    o["risks"] = [{"en": "english risk", "zh": "中文风险"}, "plain risk"]
+    rec = build_data.opportunity_to_recommendation(o, by, None)
+    assert rec["rationale"] == {"en": "English thesis.", "zh": "中文论点。"}   # object, not stringified
+    assert {"en": "english risk", "zh": "中文风险"} in rec["signals"]          # bilingual risk preserved
+    assert "plain risk" in rec["signals"]                                     # plain string still works
+
+
+# ---- meta.lang: default zh, override honored ----
+def test_meta_lang_defaults_to_zh():
+    data = build_data.build_data({"universe": universe(), "opportunities": []})
+    assert data["meta"]["lang"] == "zh"
+
+
+def test_meta_lang_override():
+    data = build_data.build_data({"universe": universe(), "opportunities": [], "lang": "en"})
+    assert data["meta"]["lang"] == "en"
 
 
 def test_non_skipped_keeps_band_and_meter():

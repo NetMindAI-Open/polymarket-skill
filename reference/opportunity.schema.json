@@ -4,13 +4,23 @@
   "type": "object",
   "required": ["strategy", "condition_id", "slug", "token_id", "outcome", "thesis", "proposed_action", "confidence", "liquidity_check"],
   "additionalProperties": true,
+  "definitions": {
+    "localizedText": {
+      "description": "User-facing prose: a plain string, OR a bilingual object so the dashboard can toggle language.",
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {"type": "object", "required": ["en", "zh"],
+         "properties": {"en": {"type": "string", "minLength": 1}, "zh": {"type": "string", "minLength": 1}}}
+      ]
+    }
+  },
   "properties": {
     "strategy": {"type": "string", "enum": ["momentum", "mean-reversion", "multi-outcome-arb", "spread-capture", "risk-free-arb", "smart-money"]},
     "condition_id": {"type": "string", "minLength": 1},
     "slug": {"type": "string", "minLength": 1},
     "token_id": {"type": "string", "minLength": 1},
     "outcome": {"type": "string", "enum": ["yes", "no"]},
-    "thesis": {"type": "string", "minLength": 1},
+    "thesis": {"$ref": "#/definitions/localizedText"},
     "signal": {"type": "object"},
     "proposed_action": {
       "type": "object",
@@ -39,6 +49,6 @@
         "est_slippage": {"type": "number"}
       }
     },
-    "risks": {"type": "array", "items": {"type": "string"}}
+    "risks": {"type": "array", "items": {"$ref": "#/definitions/localizedText"}}
   }
 }
