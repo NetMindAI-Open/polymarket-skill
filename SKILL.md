@@ -88,7 +88,9 @@ pass `--dry-run`, but its live orders will fail until it is activated on Polymar
 > 1. Go to **polymarket.com** and connect/log in with this wallet (e.g. import the private key into a
 >    browser wallet like MetaMask, then click **Connect** on the site — or use the email/Magic login that
 >    owns it).
-> 2. **Deposit USDC** into the account. Funds live on the **deposit wallet**, not your signer address.
+> 2. **Deposit USDC** into the account **from the website's own "Deposit" screen** — send only to the
+>    address that screen shows. Funds live on the **deposit wallet**, not your signer address, and **not**
+>    necessarily the address the CLI prints (see *Deposit-address safety* below).
 > 3. Complete the on-screen **"Enable Trading" approvals**. This deploys your proxy/deposit wallet and
 >    grants the USDC + conditional-token (CTF) allowances the exchange needs. Easiest on the website
 >    (gasless). **CLI alternative:** with the relayer flow configured (`POLYMARKET_RELAYER_API_KEY`), run
@@ -99,9 +101,36 @@ clean `--dry-run` is **not** proof of readiness (it only checks signing).
 
 **Read-only readiness checks** (run these before a new wallet's first live trade):
 
-- `poly -o json wallet show` → confirm the **deposit wallet** address matches polymarket.com/settings.
-  (Signer EOA ≠ deposit wallet; the deposit wallet holds funds and approvals.)
-- `poly -o json clob balance --asset-type collateral` → is USDC actually funded?
+- `poly -o json wallet show` → **confirm the `api_wallet` it prints exactly equals the deposit-wallet
+  address shown on polymarket.com/settings.** If they differ, do **not** trade or deposit — see the
+  deposit-address warning below. (Signer EOA ≠ deposit wallet; the deposit wallet holds funds and approvals.)
+- `poly -o json clob balance --asset-type collateral` → is USDC actually funded? A `0` balance on an
+  account you believe is funded is a red flag that the CLI is pointed at the wrong wallet (see below).
+
+### ⚠️ Deposit-address safety — the CLI's `api_wallet` can be the WRONG address
+
+**Never treat any address the CLI prints as a deposit target, and never assume `api_wallet` is your real
+account.** One private key deterministically derives **several distinct on-chain addresses** (the signer
+EOA plus up to four contract wallets: POLY_PROXY, GNOSIS_SAFE, and *two* variants of the type-3 deposit
+wallet). By default the CLI/SDK computes the deposit wallet from the *current* factory, which is **not
+guaranteed to be the wallet your account actually deployed and funded.** We have observed a live account
+where `poly wallet show` reported one deposit wallet (0 USDC) while the funds and the account
+polymarket.com/CLOB actually recognize lived at a *different* derived address. Sending USDC to the
+CLI-shown address in that case would strand the funds.
+
+Therefore:
+
+1. **Deposit only via the polymarket.com "Deposit" screen** — send USDC to the address that screen shows,
+   never to an address the CLI/SDK printed. (This matches the "deposit via the website" note the CLI itself
+   prints.)
+2. **Verify before trusting the CLI account:** `poly wallet show`'s `api_wallet` **must** match the
+   deposit-wallet address on polymarket.com/settings. If it doesn't, the SDK picked the wrong wallet.
+3. **Fix a mismatch by pinning the wallet:** set `"wallet_address": "0x<the address polymarket.com shows>"`
+   in `~/.config/polymarket/config.json`. The SDK will then sign/trade as that exact account instead of its
+   default guess. (There is **no** `--wallet` CLI flag — `config.json` is the only override.)
+4. **Consistency gate before any live order:** the wallet in the trade preview (`wallet`/`maker`) must be
+   the funded account CLOB recognizes. If the SDK signs as address A but your balance lives on address B,
+   orders are rejected for insufficient balance — stop and fix (step 3), don't retry.
 
 ## Trading safety (guidance, not enforced)
 

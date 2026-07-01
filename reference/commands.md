@@ -11,6 +11,14 @@ Conventions:
 - Exit code: `0` success, `1` failure. On failure with `-o json`, output is `{"error": "<message>"}`.
 - **Two addresses:** *signer EOA* (signs orders, normally empty) vs *deposit wallet* (SDK-derived proxy
   that holds USDC + positions; what polymarket.com shows). Funds/approvals live on the deposit wallet.
+- **⚠️ The CLI's deposit wallet (`api_wallet`) can be the WRONG address — never use it as a deposit
+  target.** One private key deterministically derives several distinct addresses (EOA + POLY_PROXY +
+  GNOSIS_SAFE + *two* type-3 deposit-wallet variants). The SDK's default guess is not guaranteed to be the
+  wallet your account actually deployed/funded — we observed an account where `wallet show`'s `api_wallet`
+  had 0 USDC while the funds and the account polymarket.com/CLOB recognize lived at a *different* derived
+  address. **Deposit only via the polymarket.com "Deposit" screen; verify `api_wallet` == the website's
+  deposit address before trading; pin the correct one with `wallet_address` in `config.json` if they
+  differ.** See the *Deposit-address safety* box in [SKILL.md](../SKILL.md).
 
 ---
 
@@ -25,8 +33,8 @@ Backed by `~/.config/polymarket/config.json` (`chmod 600`). Keys are never print
 | `setup` | `--private-key TEXT` (optional; else hidden prompt) | First-time key config. |
 | `wallet create` | `--force` (overwrite existing) | Generate a brand-new random wallet. **Never used on Polymarket → must be activated before trading.** |
 | `wallet import <PRIVATE_KEY>` | `<PRIVATE_KEY>` required arg | Import an existing key. |
-| `wallet show` | — | **READ.** Signer EOA + deposit wallet + config path. |
-| `wallet address` | — | **READ.** Deposit wallet address only. |
+| `wallet show` | — | **READ.** Signer EOA + `api_wallet` (deposit wallet) + config path. ⚠️ Verify `api_wallet` matches polymarket.com/settings — the SDK's default may be the wrong derived address (see header note). |
+| `wallet address` | — | **READ.** `api_wallet` (deposit wallet) address only. **Not** a deposit target; may differ from your real funded account. |
 | `wallet reset` | `--force` (required to delete) | Delete saved config. |
 
 ---
@@ -149,5 +157,10 @@ Or, with `--dry-run` — the signed order (no submission; amounts are integer ba
   `--dry-run` but fail live with `InsufficientAllowanceError`.
 - **Signer EOA vs deposit wallet** — `wallet address`, `data positions/value`, and balances use the
   **deposit wallet** (holds funds). The EOA only signs and is normally empty.
+- **⚠️ `api_wallet` may be the wrong deposit wallet** — one key derives several addresses and the SDK's
+  default pick isn't guaranteed to be your funded account. **Never deposit to a CLI-printed address**
+  (use polymarket.com's Deposit screen); verify `wallet show`'s `api_wallet` == polymarket.com/settings;
+  if it differs, set `wallet_address` in `~/.config/polymarket/config.json` to pin the correct one (there
+  is no `--wallet` flag). A live order whose signing wallet ≠ your funded account is rejected — stop, don't retry.
 - **`--dry-run` is a signing check, not a readiness check.** It always succeeds if the order is valid.
 - **Market-order side semantics** — BUY spends `--usd`; SELL delivers `--size`. Mixing is rejected.
