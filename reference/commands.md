@@ -33,8 +33,8 @@ Backed by `~/.config/polymarket/config.json` (`chmod 600`). Keys are never print
 | `setup` | `--private-key TEXT` (optional; else hidden prompt) | First-time key config. |
 | `wallet create` | `--force` (overwrite existing) | Generate a brand-new random wallet. **Never used on Polymarket → must be activated before trading.** |
 | `wallet import <PRIVATE_KEY>` | `<PRIVATE_KEY>` required arg | Import an existing key. |
-| `wallet show` | — | **READ.** Signer EOA + `api_wallet` (deposit wallet) + config path. ⚠️ Verify `api_wallet` matches polymarket.com/settings — the SDK's default may be the wrong derived address (see header note). |
-| `wallet address` | — | **READ.** `api_wallet` (deposit wallet) address only. **Not** a deposit target; may differ from your real funded account. |
+| `wallet show` | — | **READ.** Signer EOA + `api_wallet` (deposit wallet) + config path. Output carries a `note` warning that `api_wallet` is a derived guess. ⚠️ Verify `api_wallet` matches polymarket.com/settings (see header note). |
+| `wallet address` | — | **READ.** `api_wallet` (deposit wallet) address + the same `note` warning. **Not** a deposit target; may differ from your real funded account. |
 | `wallet reset` | `--force` (required to delete) | Delete saved config. |
 
 ---
@@ -143,9 +143,10 @@ Or, with `--dry-run` — the signed order (no submission; amounts are integer ba
 | `data positions [ADDRESS]` | `--limit INT` (default 20) | Positions; ADDRESS defaults to your deposit wallet. |
 | `data value [ADDRESS]` | — | Portfolio value; defaults to your deposit wallet. |
 
-**Balance JSON:**
+**Balance JSON** (the `note` warns that a 0/unexpected balance may mean the CLI is on the wrong derived wallet):
 ```json
-{"asset_type": "COLLATERAL", "balance": "1234.567", "raw": "1234567000"}
+{"asset_type": "COLLATERAL", "balance": "1234.567", "raw": "1234567000",
+ "note": "balance is for api_wallet (a derived address the SDK may pick wrong); ... verify `poly wallet show` api_wallet against polymarket.com settings."}
 ```
 
 ---

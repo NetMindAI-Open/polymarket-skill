@@ -132,6 +132,9 @@ Therefore:
    the funded account CLOB recognizes. If the SDK signs as address A but your balance lives on address B,
    orders are rejected for insufficient balance — stop and fix (step 3), don't retry.
 
+The CLI also carries this warning **in its output** — a `note` field on `wallet show`, `wallet address`,
+and `clob balance` — so you see it at call time. Read that `note`; don't ignore it.
+
 ## Trading safety (guidance, not enforced)
 
 This skill does **not** enforce spending limits — that was a deliberate design choice. Treat the
