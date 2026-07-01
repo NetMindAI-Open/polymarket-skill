@@ -42,6 +42,12 @@ smart-money wallet profiling). The arb and smart-money agents may do small targe
 beyond the universe (scout blind-spot coverage). See the Speed note above / [mcp.md](mcp.md).
 Each returns an array of Opportunity objects matching `reference/opportunity.schema.json`.
 
+**Bilingual prose (for the zh/en dashboard):** the dashboard defaults to Chinese with an EN toggle, so
+instruct each sub-agent to write `thesis` and every `risks` entry **bilingually** as
+`{"en": "…", "zh": "…"}` (the schema accepts a plain string *or* this object). Keep the technical
+`signal` map and `edge_estimate` as-is. A plain-string thesis still works — it just shows the same
+text in both languages.
+
 ## 3. Synthesize
 - Validate each returned object: `echo '<opportunity-json>' | python3 assets/risk_gate.py validate` (drop invalid ones, note them).
 - Dedupe by `(condition_id, outcome)`; if two strategies surface the same one, keep the
@@ -105,9 +111,11 @@ mapper assemble + inject `DATA` — **don't hand-write the JSON**:
      pass** over all three-per-market calls; a per-call `poly-mcp.sh` loop pays the ~5s handshake every time and
      is what makes enrichment crawl (see the Speed note above / [mcp.md](mcp.md)).
    Enriching only the shown 50 (not all 50–150) keeps the payload small.
-2. **Assemble `run.json`** = `{generated_at, wallet_label, universe, opportunities(+gate), enrichment, account}`.
-   Put **every** gated opportunity in `opportunities` — `auto`, `escalate`, **and `skip`** (each carrying its
-   `gate.decision` + `gate.reason`); skips render as low-confidence WATCH items, so dropping them hides candidates.
+2. **Assemble `run.json`** = `{lang, generated_at, wallet_label, universe, opportunities(+gate), enrichment, account}`.
+   `lang` is the dashboard's default language (`"zh"` default, or `"en"`) → `meta.lang`; the user can still flip
+   the in-dashboard `中/EN` toggle. Put **every** gated opportunity in `opportunities` — `auto`, `escalate`, **and
+   `skip`** (each carrying its `gate.decision` + `gate.reason`); skips render as low-confidence WATCH items, so
+   dropping them hides candidates.
    For `account`, check the wallet first with `poly -o json wallet show`: **set up → gather it** (`clob balance
    --asset-type collateral`, `data value`, `data positions`, `clob orders`, `clob trades`); **no key / errors →
    set `account: null`** so the Account tab renders wallet-setup steps (Markets/Recommendations still work).

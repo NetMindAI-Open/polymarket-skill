@@ -48,6 +48,13 @@
   .regen{appearance:none;cursor:pointer;font-family:var(--mono);font-size:11.5px;color:var(--dim);
     background:transparent;border:1px solid var(--line);border-radius:6px;padding:5px 11px}
   .regen:hover{border-color:var(--signal);color:var(--text)}
+  .lang-toggle{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .lang-btn{appearance:none;cursor:pointer;background:transparent;border:0;font-family:var(--mono);
+    font-size:11.5px;color:var(--faint);padding:5px 10px;transition:color .12s,background .12s}
+  .lang-btn+.lang-btn{border-left:1px solid var(--line)}
+  .lang-btn:hover{color:var(--dim)}
+  .lang-btn[aria-pressed="true"]{color:var(--ink);background:var(--signal)}
+  .lang-btn:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
 
   /* ---------- tabs ---------- */
   nav.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:0 0 26px}
@@ -395,76 +402,80 @@
     <div class="brand">
       <span class="mark">◆</span>
       <span class="word">Polymarket</span>
-      <span class="sub">Odds Terminal</span>
+      <span class="sub" data-i18n="header.sub">Odds Terminal</span>
     </div>
     <span class="wallet" id="walletLabel"></span>
     <span class="dateline"><span class="dot"></span><span id="snapTime"></span></span>
-    <button class="regen" id="refreshBtn" type="button" title="Ask the agent to regenerate with fresh data">↻ regenerate</button>
+    <div class="lang-toggle" role="group" aria-label="Language / 语言">
+      <button class="lang-btn" type="button" data-lang="zh" aria-pressed="true">中</button>
+      <button class="lang-btn" type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="regen" id="refreshBtn" type="button" data-i18n="header.regen" data-i18n-title="header.regenTitle" title="Ask the agent to regenerate with fresh data">↻ regenerate</button>
   </header>
 
-  <nav class="tabs" role="tablist" aria-label="Dashboard sections">
-    <button class="tab" role="tab" id="tab-readme" aria-controls="panel-readme" aria-selected="true">Readme</button>
-    <button class="tab" role="tab" id="tab-markets" aria-controls="panel-markets" aria-selected="false">Markets <span class="count" id="cnt-markets"></span></button>
-    <button class="tab" role="tab" id="tab-recs" aria-controls="panel-recs" aria-selected="false">Recommendations <span class="count" id="cnt-recs"></span></button>
-    <button class="tab" role="tab" id="tab-account" aria-controls="panel-account" aria-selected="false">Account</button>
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections" data-i18n-aria="nav.aria">
+    <button class="tab" role="tab" id="tab-readme" aria-controls="panel-readme" aria-selected="true"><span data-i18n="tab.readme">Readme</span></button>
+    <button class="tab" role="tab" id="tab-markets" aria-controls="panel-markets" aria-selected="false"><span data-i18n="tab.markets">Markets</span> <span class="count" id="cnt-markets"></span></button>
+    <button class="tab" role="tab" id="tab-recs" aria-controls="panel-recs" aria-selected="false"><span data-i18n="tab.recs">Recommendations</span> <span class="count" id="cnt-recs"></span></button>
+    <button class="tab" role="tab" id="tab-account" aria-controls="panel-account" aria-selected="false"><span data-i18n="tab.account">Account</span></button>
   </nav>
 
   <main>
     <section id="panel-readme" role="tabpanel" aria-labelledby="tab-readme">
       <div class="readme">
         <header class="rm-hero">
-          <div class="rm-eyebrow"><span class="rm-live"></span> live · agent terminal</div>
-          <h1 class="rm-h1">Read the odds.<br>Run the <span class="a">scan</span>.<br>Place the <span class="y">bet</span>.</h1>
-          <p class="rm-sub">An agent-run Polymarket terminal. Search live odds, run a six-strategy opportunity scan, and trade — all from chat. <b>Reading is free; trading spends real USDC.</b></p>
+          <div class="rm-eyebrow" data-i18n-html="rm.eyebrow"><span class="rm-live"></span> live · agent terminal</div>
+          <h1 class="rm-h1" data-i18n-html="rm.h1">Read the odds.<br>Run the <span class="a">scan</span>.<br>Place the <span class="y">bet</span>.</h1>
+          <p class="rm-sub" data-i18n-html="rm.sub">An agent-run Polymarket terminal. Search live odds, run a six-strategy opportunity scan, and trade — all from chat. <b>Reading is free; trading spends real USDC.</b></p>
           <div class="rm-tape"><div class="rm-tape-track" id="rm-tape" aria-hidden="true"></div></div>
         </header>
 
         <section class="rm-block">
-          <h2 class="rm-kicker">Get trading-ready</h2>
-          <p class="rm-lead">Odds, search and dashboards need <b>no setup</b>. Trading takes five steps — once.</p>
+          <h2 class="rm-kicker" data-i18n="rm.setup.kicker">Get trading-ready</h2>
+          <p class="rm-lead" data-i18n-html="rm.setup.lead">Odds, search and dashboards need <b>no setup</b>. Trading takes five steps — once.</p>
           <ol class="rm-time">
-            <li><span class="rm-dot">1</span><div class="rm-tc"><h3>Hand your agent the key</h3><p>Give it your wallet's private key. It configures the signer (<code>poly setup</code>) to sign orders for you — the key is never printed, echoed, or logged.</p></div></li>
-            <li><span class="rm-dot">2</span><div class="rm-tc"><h3>Connect the same wallet on the site</h3><p>Log in to <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer">polymarket.com</a> with that wallet — import the key into a browser wallet → Connect, or use the email/Magic login that owns it.</p></div></li>
-            <li><span class="rm-dot">3</span><div class="rm-tc"><h3>Enable trading</h3><p>Complete the on-screen approvals. This deploys your deposit wallet and grants the USDC + conditional-token allowances the exchange needs — gasless on the site.</p></div></li>
-            <li><span class="rm-dot">4</span><div class="rm-tc"><h3>Deposit USDC</h3><p>Fund your account through the website. The money lives on your <b>deposit wallet</b>, not the signer address.</p></div></li>
-            <li class="done"><span class="rm-dot">✓</span><div class="rm-tc"><h3>You're ready to trade</h3><p>Confirm with the agent: <code>wallet show</code> (deposit wallet matches your site settings) and <code>clob balance</code> (USDC funded).</p></div></li>
+            <li><span class="rm-dot">1</span><div class="rm-tc"><h3 data-i18n="rm.setup.s1.h">Hand your agent the key</h3><p data-i18n-html="rm.setup.s1.p">Give it your wallet's private key. It configures the signer (<code>poly setup</code>) to sign orders for you — the key is never printed, echoed, or logged.</p></div></li>
+            <li><span class="rm-dot">2</span><div class="rm-tc"><h3 data-i18n="rm.setup.s2.h">Connect the same wallet on the site</h3><p data-i18n-html="rm.setup.s2.p">Log in to <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer">polymarket.com</a> with that wallet — import the key into a browser wallet → Connect, or use the email/Magic login that owns it.</p></div></li>
+            <li><span class="rm-dot">3</span><div class="rm-tc"><h3 data-i18n="rm.setup.s3.h">Enable trading</h3><p data-i18n-html="rm.setup.s3.p">Complete the on-screen approvals. This deploys your deposit wallet and grants the USDC + conditional-token allowances the exchange needs — gasless on the site.</p></div></li>
+            <li><span class="rm-dot">4</span><div class="rm-tc"><h3 data-i18n="rm.setup.s4.h">Deposit USDC</h3><p data-i18n-html="rm.setup.s4.p">Fund your account through the website. The money lives on your <b>deposit wallet</b>, not the signer address.</p></div></li>
+            <li class="done"><span class="rm-dot">✓</span><div class="rm-tc"><h3 data-i18n="rm.setup.s5.h">You're ready to trade</h3><p data-i18n-html="rm.setup.s5.p">Confirm with the agent: <code>wallet show</code> (deposit wallet matches your site settings) and <code>clob balance</code> (USDC funded).</p></div></li>
           </ol>
-          <p class="rm-flag"><b>One gotcha:</b> a brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> until steps 2–3 are done on the site. A clean dry-run isn't proof you're ready.</p>
+          <p class="rm-flag" data-i18n-html="rm.setup.flag"><b>One gotcha:</b> a brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> until steps 2–3 are done on the site. A clean dry-run isn't proof you're ready.</p>
         </section>
 
         <section class="rm-block">
-          <h2 class="rm-kicker">How the scan works</h2>
-          <p class="rm-lead">Ask to <b>"scan for opportunities"</b> and a multi-agent pipeline runs end to end. Only the deterministic risk gate ever spends money.</p>
+          <h2 class="rm-kicker" data-i18n="rm.scan.kicker">How the scan works</h2>
+          <p class="rm-lead" data-i18n-html="rm.scan.lead">Ask to <b>"scan for opportunities"</b> and a multi-agent pipeline runs end to end. Only the deterministic risk gate ever spends money.</p>
           <div class="rm-flow">
-            <div class="rm-stage"><div class="rm-st">scout</div><p>~50–150 markets from 4 screens — movers, volume spikes, spreads, liquidity.</p></div>
+            <div class="rm-stage"><div class="rm-st" data-i18n="rm.scan.scout.st">scout</div><p data-i18n="rm.scan.scout.p">~50–150 markets from 4 screens — movers, volume spikes, spreads, liquidity.</p></div>
             <div class="rm-arrow">→</div>
-            <div class="rm-stage"><div class="rm-st">6 strategies · in parallel</div><div class="rm-chips"><span>momentum</span><span>mean-reversion</span><span>multi-outcome-arb</span><span>spread-capture</span><span>risk-free-arb</span><span>smart-money</span></div></div>
+            <div class="rm-stage"><div class="rm-st" data-i18n="rm.scan.strat.st">6 strategies · in parallel</div><div class="rm-chips"><span>momentum</span><span>mean-reversion</span><span>multi-outcome-arb</span><span>spread-capture</span><span>risk-free-arb</span><span>smart-money</span></div></div>
             <div class="rm-arrow">→</div>
-            <div class="rm-stage"><div class="rm-st">risk gate</div><div class="rm-gate"><span class="g">auto</span><span class="a">escalate</span><span class="m">skip</span></div><p>validate · dedupe · rank, then decide per trade.</p></div>
+            <div class="rm-stage"><div class="rm-st" data-i18n="rm.scan.gate.st">risk gate</div><div class="rm-gate" data-i18n-html="rm.scan.gate.labels"><span class="g">auto</span><span class="a">escalate</span><span class="m">skip</span></div><p data-i18n="rm.scan.gate.p">validate · dedupe · rank, then decide per trade.</p></div>
           </div>
-          <p class="rm-safe"><b>Safety:</b> only structural arbitrage auto-executes. Every directional call escalates for your approval — nothing speculative trades without you, and per-order / per-run dollar caps live in one place.</p>
+          <p class="rm-safe" data-i18n-html="rm.scan.safe"><b>Safety:</b> only structural arbitrage auto-executes. Every directional call escalates for your approval — nothing speculative trades without you, and per-order / per-run dollar caps live in one place.</p>
         </section>
 
         <section class="rm-block">
-          <h2 class="rm-kicker">Ask your agent</h2>
+          <h2 class="rm-kicker" data-i18n="rm.ask.kicker">Ask your agent</h2>
           <div class="rm-palette">
-            <div class="rm-pbar"><span class="c">▸</span> ask anything — or pick a starting point</div>
+            <div class="rm-pbar" data-i18n-html="rm.ask.pbar"><span class="c">▸</span> ask anything — or pick a starting point</div>
             <div class="rm-suggest">
               <div class="rm-sgroup">
-                <div class="rm-sgl scan">runs the scan <small>multi-agent · may trade</small></div>
-                <button class="qbtn scan" type="button" data-q="Scan Polymarket for opportunities">Scan Polymarket for opportunities</button>
-                <button class="qbtn scan" type="button" data-q="Find arbitrage and mispricings across Polymarket right now">Find arbitrage and mispricings right now</button>
-                <button class="qbtn scan" type="button" data-q="Run the opportunity scan with a $30 total cap for today">Run the scan with a $30 cap today</button>
-                <button class="qbtn scan" type="button" data-q="Do a full scan and build me a dashboard of what you find">Do a full scan, then build a dashboard</button>
+                <div class="rm-sgl scan" data-i18n-html="rm.ask.scanHead">runs the scan <small>multi-agent · may trade</small></div>
+                <button class="qbtn scan" type="button" data-i18n="rm.ask.scan1" data-i18n-q="rm.ask.scan1q" data-q="Scan Polymarket for opportunities">Scan Polymarket for opportunities</button>
+                <button class="qbtn scan" type="button" data-i18n="rm.ask.scan2" data-i18n-q="rm.ask.scan2q" data-q="Find arbitrage and mispricings across Polymarket right now">Find arbitrage and mispricings right now</button>
+                <button class="qbtn scan" type="button" data-i18n="rm.ask.scan3" data-i18n-q="rm.ask.scan3q" data-q="Run the opportunity scan with a $30 total cap for today">Run the scan with a $30 cap today</button>
+                <button class="qbtn scan" type="button" data-i18n="rm.ask.scan4" data-i18n-q="rm.ask.scan4q" data-q="Do a full scan and build me a dashboard of what you find">Do a full scan, then build a dashboard</button>
               </div>
               <div class="rm-sgroup">
-                <div class="rm-sgl quick">quick reads <small>read-only · instant</small></div>
-                <button class="qbtn quick" type="button" data-q="What are the odds Brazil wins the 2026 World Cup?">What are the odds Brazil wins the World Cup?</button>
-                <button class="qbtn quick" type="button" data-q="Search Polymarket for 2028 US election markets">Search for election markets</button>
-                <button class="qbtn quick" type="button" data-q="Show my Polymarket balance, positions and open orders">Show my balance, positions and orders</button>
-                <button class="qbtn quick" type="button" data-q="Show the order book and price history for the Fed rate-cut market">Show a market's order book + history</button>
-                <button class="qbtn quick" type="button" data-q="Make me a Polymarket dashboard of the top 30 markets by volume">Build a dashboard of the top 30 markets</button>
-                <button class="qbtn quick" type="button" data-q="What's my Polymarket portfolio value?">What's my portfolio value?</button>
+                <div class="rm-sgl quick" data-i18n-html="rm.ask.quickHead">quick reads <small>read-only · instant</small></div>
+                <button class="qbtn quick" type="button" data-i18n="rm.ask.q1" data-i18n-q="rm.ask.q1q" data-q="What are the odds Brazil wins the 2026 World Cup?">What are the odds Brazil wins the World Cup?</button>
+                <button class="qbtn quick" type="button" data-i18n="rm.ask.q2" data-i18n-q="rm.ask.q2q" data-q="Search Polymarket for 2028 US election markets">Search for election markets</button>
+                <button class="qbtn quick" type="button" data-i18n="rm.ask.q3" data-i18n-q="rm.ask.q3q" data-q="Show my Polymarket balance, positions and open orders">Show my balance, positions and orders</button>
+                <button class="qbtn quick" type="button" data-i18n="rm.ask.q4" data-i18n-q="rm.ask.q4q" data-q="Show the order book and price history for the Fed rate-cut market">Show a market's order book + history</button>
+                <button class="qbtn quick" type="button" data-i18n="rm.ask.q5" data-i18n-q="rm.ask.q5q" data-q="Make me a Polymarket dashboard of the top 30 markets by volume">Build a dashboard of the top 30 markets</button>
+                <button class="qbtn quick" type="button" data-i18n="rm.ask.q6" data-i18n-q="rm.ask.q6q" data-q="What's my Polymarket portfolio value?">What's my portfolio value?</button>
               </div>
             </div>
           </div>
@@ -476,7 +487,7 @@
     <section id="panel-account" role="tabpanel" aria-labelledby="tab-account" hidden></section>
   </main>
 </div>
-<footer>Snapshot — odds and balances are frozen at generation time. Regenerate for live data.</footer>
+<footer data-i18n="footer.note">Snapshot — odds and balances are frozen at generation time. Regenerate for live data.</footer>
 
 <script>
 /* === POLYMARKET_DATA_START — agent replaces this whole block ===
@@ -628,9 +639,9 @@ const DATA = {
       url: "https://polymarket.com/event/netanyahu-out-before-2027",
       outcome: "YES", action: "BUY", target_price: "0.47",
       strategy: "risk-free-arb", status: "executed", size_usd: "8", edge: "~3%", order_id: "0xa1b2…ff01",
-      strategy_note: "locks a guaranteed profit when YES + NO together cost less than $1",
+      strategy_note: { en: "locks a guaranteed profit when YES + NO together cost less than $1", zh: "当 YES + NO 加起来不到 $1 时锁定无风险利润" },
       confidence: "high", confidence_score: "0.9",
-      rationale: "Structural arb — YES+NO summed below 1.00; the risk gate auto-executed within limits after a matching dry-run.",
+      rationale: { en: "Structural arb — YES+NO summed below 1.00; the risk gate auto-executed within limits after a matching dry-run.", zh: "结构性套利——YES+NO 合计低于 1.00;经 dry-run 核对一致后,风控闸门在额度内自动执行。" },
       signals: ["sum_of_outcomes 0.97", "edge 3%", "liq $20k", "slippage 0.1%"]
     },
     {
@@ -638,9 +649,9 @@ const DATA = {
       url: "https://polymarket.com/event/how-many-fed-rate-cuts-in-2026",
       outcome: "YES", action: "BUY", target_price: "0.77",
       strategy: "momentum", status: "pending", size_usd: "10", edge: "~4%",
-      strategy_note: "rides a strong recent price move, betting the trend keeps going",
+      strategy_note: { en: "rides a strong recent price move, betting the trend keeps going", zh: "顺着近期的强势价格走势,押注趋势会延续" },
       confidence: "high", confidence_score: "0.78",
-      rationale: "Strong one-directional inflow as rate-cut odds firm; tight spread, deep bid support. Directional → the gate escalates it for your approval before it fills.",
+      rationale: { en: "Strong one-directional inflow as rate-cut odds firm; tight spread, deep bid support. Directional → the gate escalates it for your approval before it fills.", zh: "降息概率走强带来强劲的单边流入;价差很窄、买盘支撑充足。属方向性判断 → 闸门会在成交前上报给你批准。" },
       signals: ["momentum +6pts/3d", "net inflow", "spread 1¢"]
     },
     {
@@ -648,11 +659,11 @@ const DATA = {
       url: "https://polymarket.com/event/mlb-world-series-champion-2026",
       outcome: "YES", action: "WATCH", target_price: "0.135",
       strategy: "mean-reversion", status: "skipped",
-      strategy_note: "bets a sharp overshoot snaps back toward its recent average",
-      gate_note: "not enough resting orders at the target price, so filling would push the price against us",
+      strategy_note: { en: "bets a sharp overshoot snaps back toward its recent average", zh: "押注急涨或急跌会回归到近期均值" },
+      gate_note: { en: "not enough resting orders at the target price, so filling would push the price against us", zh: "目标价位上的挂单不够,成交会把价格推向不利的一侧" },
       confidence: "low", confidence_score: "0.3",
-      rationale: "Price jumped ~5pts in a day on thin late-season volume and looks stretched versus its 30-day average — a textbook mean-reversion candidate.",
-      signals: ["thin depth", "season far from over", "low liquidity"]
+      rationale: { en: "Price jumped ~5pts in a day on thin late-season volume and looks stretched versus its 30-day average — a textbook mean-reversion candidate.", zh: "价格在赛季末的清淡成交里一天跳涨约 5 个点,相对 30 日均值明显拉伸——典型的均值回归候选。" },
+      signals: [{ en: "thin depth", zh: "盘口偏薄" }, { en: "season far from over", zh: "赛季远未结束" }, { en: "low liquidity", zh: "流动性低" }]
     }
   ],
   account: {
@@ -682,6 +693,191 @@ const DATA = {
   var D = (typeof DATA !== "undefined" && DATA) ? DATA : null;
   var YES="#35D6A0", NO="#FF6B5C";
 
+  /* ---------- i18n (default Chinese; instant zh/en toggle) ----------
+     Two layers: I18N[lang][key] for UI chrome (t()), and bilingual DATA values
+     {en,zh} resolved by tv(). Trading terms (BUY/WATCH, HIGH/LOW, YES/NO) and
+     market titles stay English per design. HTML in values uses single-quoted attrs. */
+  var I18N = {
+    en: {
+      "header.sub":"Odds Terminal","header.regen":"↻ regenerate",
+      "header.regenTitle":"Ask the agent to regenerate with fresh data","nav.aria":"Dashboard sections",
+      "chrome.snapshot":"snapshot","chrome.noWallet":"no wallet","chrome.regenAsk":"↻ ask the agent to regenerate",
+      "tab.readme":"Readme","tab.markets":"Markets","tab.recs":"Recommendations","tab.account":"Account",
+      "rm.eyebrow":"<span class='rm-live'></span> live · agent terminal",
+      "rm.h1":"Read the odds.<br>Run the <span class='a'>scan</span>.<br>Place the <span class='y'>bet</span>.",
+      "rm.sub":"An agent-run Polymarket terminal. Search live odds, run a six-strategy opportunity scan, and trade — all from chat. <b>Trade with real USDC.</b>",
+      "rm.setup.kicker":"Get trading-ready",
+      "rm.setup.lead":"Odds, search and dashboards need <b>no setup</b>. Trading takes five steps — once.",
+      "rm.setup.s1.h":"Hand your agent the key",
+      "rm.setup.s1.p":"Give it your wallet's private key. It configures the signer (<code>poly setup</code>) to sign orders for you — the key is never printed, echoed, or logged.",
+      "rm.setup.s2.h":"Connect the same wallet on the site",
+      "rm.setup.s2.p":"Log in to <a href='https://polymarket.com' target='_blank' rel='noopener noreferrer'>polymarket.com</a> with that wallet — import the key into a browser wallet → Connect, or use the email/Magic login that owns it.",
+      "rm.setup.s3.h":"Enable trading",
+      "rm.setup.s3.p":"Complete the on-screen approvals. This deploys your deposit wallet and grants the USDC + conditional-token allowances the exchange needs — gasless on the site.",
+      "rm.setup.s4.h":"Deposit USDC",
+      "rm.setup.s4.p":"Fund your account through the website. The money lives on your <b>deposit wallet</b>, not the signer address.",
+      "rm.setup.s5.h":"You're ready to trade",
+      "rm.setup.s5.p":"Confirm with the agent: <code>wallet show</code> (deposit wallet matches your site settings) and <code>clob balance</code> (USDC funded).",
+      "rm.setup.flag":"<b>One gotcha:</b> a brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> until steps 2–3 are done on the site. A clean dry-run isn't proof you're ready.",
+      "rm.scan.kicker":"How the scan works",
+      "rm.scan.lead":"Ask to <b>“scan for opportunities”</b> and a multi-agent pipeline runs end to end. Only the deterministic risk gate ever spends money.",
+      "rm.scan.scout.st":"scout",
+      "rm.scan.scout.p":"~50–150 markets from 4 screens — movers, volume spikes, spreads, liquidity.",
+      "rm.scan.strat.st":"6 strategies · in parallel","rm.scan.gate.st":"risk gate",
+      "rm.scan.gate.labels":"<span class='g'>auto</span><span class='a'>escalate</span><span class='m'>skip</span>",
+      "rm.scan.gate.p":"validate · dedupe · rank, then decide per trade.",
+      "rm.scan.safe":"<b>Safety:</b> only structural arbitrage auto-executes. Every directional call escalates for your approval — nothing speculative trades without you, and per-order / per-run dollar caps live in one place.",
+      "rm.ask.kicker":"Ask your agent",
+      "rm.ask.pbar":"<span class='c'>▸</span> ask anything — or pick a starting point",
+      "rm.ask.scanHead":"runs the scan <small>multi-agent · may trade</small>",
+      "rm.ask.quickHead":"quick reads <small>read-only · instant</small>",
+      "rm.ask.scan1":"Scan Polymarket for opportunities","rm.ask.scan1q":"Scan Polymarket for opportunities",
+      "rm.ask.scan2":"Find arbitrage and mispricings right now","rm.ask.scan2q":"Find arbitrage and mispricings across Polymarket right now",
+      "rm.ask.scan3":"Run the scan with a $30 cap today","rm.ask.scan3q":"Run the opportunity scan with a $30 total cap for today",
+      "rm.ask.scan4":"Do a full scan, then build a dashboard","rm.ask.scan4q":"Do a full scan and build me a dashboard of what you find",
+      "rm.ask.q1":"What are the odds Brazil wins the World Cup?","rm.ask.q1q":"What are the odds Brazil wins the 2026 World Cup?",
+      "rm.ask.q2":"Search for election markets","rm.ask.q2q":"Search Polymarket for 2028 US election markets",
+      "rm.ask.q3":"Show my balance, positions and orders","rm.ask.q3q":"Show my Polymarket balance, positions and open orders",
+      "rm.ask.q4":"Show a market's order book + history","rm.ask.q4q":"Show the order book and price history for the Fed rate-cut market",
+      "rm.ask.q5":"Build a dashboard of the top 30 markets","rm.ask.q5q":"Make me a Polymarket dashboard of the top 30 markets by volume",
+      "rm.ask.q6":"What's my portfolio value?","rm.ask.q6q":"What's my Polymarket portfolio value?",
+      "footer.note":"Snapshot — odds and balances are frozen at generation time. Regenerate for live data.",
+      "mk.stats.total":"Total volume","mk.stats.vol24":"24h volume","mk.stats.liq":"Liquidity","mk.stats.active":"Active markets",
+      "mk.sort.hot":"24h Hot","mk.sort.volume":"Total Volume","mk.sort.liquidity":"Liquidity","mk.sort.ending":"Ending Soon",
+      "mk.search.ph":"Search markets…","mk.search.aria":"Search markets","mk.cats.aria":"Filter by category","mk.sorts.aria":"Sort markets",
+      "mk.countLabel":"Markets","mk.empty":"No markets match your filters.","mk.emptySnapshot":"No markets in this snapshot.",
+      "cat.All":"All","cat.Sports":"Sports","cat.Politics":"Politics","cat.Crypto":"Crypto","cat.Tech":"Tech","cat.Finance":"Finance","cat.Weather":"Weather","cat.Other":"Other",
+      "card.priceHistory":"Price history","card.ohlcVol":"OHLC · vol","card.noHistory":"no price history yet","card.orderBook":"Order book","card.noBook":"no order book yet","card.spread":"spread","card.mid":"mid","card.trade":"Trade on Polymarket","card.vol24":"24h vol","card.flow":"flow",
+      "time.ended":"Ended","time.today":"Today","time.1d":"1d left","time.d":"{n}d left","time.w":"{n}w left","time.mo":"{n}mo left","time.y":"{n}y left",
+      "modal.close":"Close","modal.noResolution":"Resolution criteria not provided in this snapshot.","modal.perShare":"per share",
+      "modal.total":"Total volume","modal.vol24":"24h volume","modal.liq":"Liquidity","modal.ends":"Ends",
+      "modal.viewOn":"View on Polymarket","modal.noLink":"No Polymarket link available for this market.",
+      "recs.empty":"No recommendations in this snapshot.",
+      "recs.status.executed":"Executed","recs.status.pending":"Needs approval","recs.status.skipped":"Skipped",
+      "recs.setAside":"set aside","recs.order":"order","recs.size":"size","recs.edge":"edge","recs.viewOn":"View on Polymarket",
+      "acct.cash":"Cash · USDC","acct.portfolio":"Portfolio value","acct.openOrders":"Open orders","acct.positions":"Positions","acct.depositWallet":"deposit wallet",
+      "acct.sect.positions":"Positions","acct.sect.orders":"Open orders","acct.sect.trades":"Trade history",
+      "col.market":"Market","col.out":"Out","col.size":"Size","col.avg":"Avg","col.cur":"Cur","col.value":"Value","col.pnl":"PnL",
+      "col.order":"Order","col.side":"Side","col.price":"Price","col.filled":"Filled","col.status":"Status","col.time":"Time",
+      "acct.empty.positions":"No open positions.","acct.empty.orders":"No open orders.","acct.empty.trades":"No trades yet.",
+      "acct.setup.title":"No wallet connected",
+      "acct.setup.lead":"Your <b>balance, positions, open orders &amp; trade history</b> appear here once a funded, trading-enabled wallet is configured. Markets and Recommendations work without one — to light this tab up, set a wallet up once:",
+      "acct.setup.s1":"<b>Give the agent your wallet's private key.</b> It configures the signer (<code>poly setup</code>) so it can sign on your behalf — the key is never printed, echoed, or logged.",
+      "acct.setup.s2":"<b>Log in to <a href='https://polymarket.com' target='_blank' rel='noopener noreferrer'>polymarket.com</a> with the same wallet</b> and complete the on-screen <b>“Enable Trading”</b> approvals.",
+      "acct.setup.s3":"<b>Deposit USDC</b> on the website — funds live on your <b>deposit wallet</b>, not the signer address.",
+      "acct.setup.s4":"<b>Verify &amp; regenerate.</b> Ask the agent to run <code>wallet show</code> + <code>clob balance</code>, then regenerate this dashboard to populate the tab.",
+      "acct.setup.note":"A brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> until steps 2–3 are done. Full walkthrough on the <button type='button' class='lnk' data-goto='readme'>Readme</button> tab."
+    },
+    zh: {
+      "header.sub":"赔率终端","header.regen":"↻ 重新生成",
+      "header.regenTitle":"让 agent 用最新数据重新生成","nav.aria":"仪表盘分区",
+      "chrome.snapshot":"快照","chrome.noWallet":"未连接钱包","chrome.regenAsk":"↻ 让 agent 重新生成",
+      "tab.readme":"说明","tab.markets":"市场","tab.recs":"推荐","tab.account":"账户",
+      "rm.eyebrow":"<span class='rm-live'></span> 实时 · agent 终端",
+      "rm.h1":"审时度势，<br>全盘<span class='a'>扫描</span>，<br>果断<span class='y'>出手</span>",
+      "rm.sub":"一个由 agent 驱动的 Polymarket 终端。搜索实时赔率、运行六策略机会扫描、直接下单——全程在对话里完成。",
+      "rm.setup.kicker":"开始交易前的准备",
+      "rm.setup.lead":"查看赔率、搜索和仪表盘<b>无需任何设置</b>。下单只需一次性完成五步。",
+      "rm.setup.s1.h":"把私钥交给你的 agent",
+      "rm.setup.s1.p":"把你钱包的私钥给它。它会配置签名器(<code>poly setup</code>)替你签署订单——私钥永远不会被打印、回显或记录。",
+      "rm.setup.s2.h":"在网站上连接同一个钱包",
+      "rm.setup.s2.p":"用这个钱包登录 <a href='https://polymarket.com' target='_blank' rel='noopener noreferrer'>polymarket.com</a>——把私钥导入浏览器钱包 → 连接,或使用拥有它的邮箱/Magic 登录。",
+      "rm.setup.s3.h":"开启交易",
+      "rm.setup.s3.p":"完成页面上的授权。这会部署你的存款钱包,并授予交易所需要的 USDC 与条件代币额度——在网站上免 gas。",
+      "rm.setup.s4.h":"存入 USDC",
+      "rm.setup.s4.p":"通过网站为账户充值。资金存放在你的<b>存款钱包</b>,而不是签名器地址上。",
+      "rm.setup.s5.h":"你已经可以交易了",
+      "rm.setup.s5.p":"向 agent 确认:<code>wallet show</code>(存款钱包与网站设置一致)和 <code>clob balance</code>(USDC 已到账)。",
+      "rm.setup.flag":"<b>一个坑:</b>全新钱包可以签名并通过 dry-run,但在网站完成第 2–3 步之前,真实下单会以 <code>InsufficientAllowanceError</code> 失败。dry-run 通过并不代表你已就绪。",
+      "rm.scan.kicker":"扫描是怎么运作的",
+      "rm.scan.lead":"只要说一句<b>「扫描机会」</b>,一条多 agent 流水线就会端到端跑完。只有确定性的风控闸门会动钱。",
+      "rm.scan.scout.st":"侦察",
+      "rm.scan.scout.p":"用 4 个筛选器从约 50–150 个市场里捞——异动、放量、价差、流动性。",
+      "rm.scan.strat.st":"6 个策略 · 并行","rm.scan.gate.st":"风控闸门",
+      "rm.scan.gate.labels":"<span class='g'>自动</span><span class='a'>上报</span><span class='m'>跳过</span>",
+      "rm.scan.gate.p":"校验 · 去重 · 排序,再逐笔决策。",
+      "rm.scan.safe":"<b>安全:</b>只有结构性套利会自动执行。每一个方向性判断都会上报给你批准——没有你,任何投机性交易都不会发生,而且单笔/单轮的金额上限统一在一处管理。",
+      "rm.ask.kicker":"问你的 agent",
+      "rm.ask.pbar":"<span class='c'>▸</span> 随便问——或从一个起点开始",
+      "rm.ask.scanHead":"触发扫描 <small>多 agent · 可能下单</small>",
+      "rm.ask.quickHead":"快速查询 <small>只读 · 即时</small>",
+      "rm.ask.scan1":"扫描 Polymarket 寻找机会","rm.ask.scan1q":"扫描 Polymarket 寻找机会",
+      "rm.ask.scan2":"立刻找出套利和错误定价","rm.ask.scan2q":"立刻找出 Polymarket 上的套利和错误定价",
+      "rm.ask.scan3":"今天用 $30 上限跑一次扫描","rm.ask.scan3q":"今天用 $30 的总额上限跑一次机会扫描",
+      "rm.ask.scan4":"完整扫描,然后生成仪表盘","rm.ask.scan4q":"做一次完整扫描,并把结果做成仪表盘",
+      "rm.ask.q1":"巴西夺得世界杯的赔率是多少?","rm.ask.q1q":"巴西夺得 2026 世界杯的赔率是多少?",
+      "rm.ask.q2":"搜索选举相关市场","rm.ask.q2q":"在 Polymarket 搜索 2028 美国大选市场",
+      "rm.ask.q3":"显示我的余额、持仓和挂单","rm.ask.q3q":"显示我的 Polymarket 余额、持仓和挂单",
+      "rm.ask.q4":"看某个市场的订单簿和走势","rm.ask.q4q":"显示美联储降息市场的订单簿和价格走势",
+      "rm.ask.q5":"生成成交量前 30 市场的仪表盘","rm.ask.q5q":"按成交量为我生成 Polymarket 前 30 市场的仪表盘",
+      "rm.ask.q6":"我的组合价值是多少?","rm.ask.q6q":"我的 Polymarket 组合价值是多少?",
+      "footer.note":"快照——赔率与余额冻结在生成时刻。需要实时数据请重新生成。",
+      "mk.stats.total":"总成交量","mk.stats.vol24":"24h 成交量","mk.stats.liq":"流动性","mk.stats.active":"活跃市场",
+      "mk.sort.hot":"24小时热门","mk.sort.volume":"总成交量","mk.sort.liquidity":"流动性","mk.sort.ending":"即将结束",
+      "mk.search.ph":"搜索市场…","mk.search.aria":"搜索市场","mk.cats.aria":"按分类筛选","mk.sorts.aria":"排序",
+      "mk.countLabel":"市场","mk.empty":"没有符合筛选条件的市场。","mk.emptySnapshot":"本快照没有市场数据。",
+      "cat.All":"全部","cat.Sports":"体育","cat.Politics":"政治","cat.Crypto":"加密货币","cat.Tech":"科技","cat.Finance":"金融","cat.Weather":"天气","cat.Other":"其他",
+      "card.priceHistory":"价格走势","card.ohlcVol":"OHLC · 量","card.noHistory":"暂无价格走势","card.orderBook":"订单簿","card.noBook":"暂无订单簿","card.spread":"价差","card.mid":"中间价","card.trade":"去 Polymarket 交易","card.vol24":"24h 量","card.flow":"资金流",
+      "time.ended":"已结束","time.today":"今天","time.1d":"剩 1 天","time.d":"剩 {n} 天","time.w":"剩 {n} 周","time.mo":"剩 {n} 个月","time.y":"剩 {n} 年",
+      "modal.close":"关闭","modal.noResolution":"本快照未提供结算标准。","modal.perShare":"每股",
+      "modal.total":"总成交量","modal.vol24":"24h 成交量","modal.liq":"流动性","modal.ends":"结束于",
+      "modal.viewOn":"在 Polymarket 上查看","modal.noLink":"该市场暂无 Polymarket 链接。",
+      "recs.empty":"本快照没有推荐。",
+      "recs.status.executed":"已执行","recs.status.pending":"待批准","recs.status.skipped":"已跳过",
+      "recs.setAside":"已搁置","recs.order":"订单","recs.size":"金额","recs.edge":"预期收益","recs.viewOn":"在 Polymarket 上查看",
+      "acct.cash":"现金 · USDC","acct.portfolio":"组合价值","acct.openOrders":"挂单","acct.positions":"持仓","acct.depositWallet":"存款钱包",
+      "acct.sect.positions":"持仓","acct.sect.orders":"挂单","acct.sect.trades":"成交记录",
+      "col.market":"市场","col.out":"结果","col.size":"数量","col.avg":"均价","col.cur":"现价","col.value":"价值","col.pnl":"盈亏",
+      "col.order":"订单","col.side":"方向","col.price":"价格","col.filled":"成交","col.status":"状态","col.time":"时间",
+      "acct.empty.positions":"暂无持仓。","acct.empty.orders":"暂无挂单。","acct.empty.trades":"暂无成交记录。",
+      "acct.setup.title":"未连接钱包",
+      "acct.setup.lead":"配置好一个有资金、已开启交易的钱包后,你的<b>余额、持仓、挂单和成交记录</b>会显示在这里。没有钱包,市场和推荐照常可用——想点亮这个标签页,只需一次性设置钱包:",
+      "acct.setup.s1":"<b>把钱包私钥交给 agent。</b>它会配置签名器(<code>poly setup</code>)来替你签名——私钥永远不会被打印、回显或记录。",
+      "acct.setup.s2":"<b>用同一个钱包登录 <a href='https://polymarket.com' target='_blank' rel='noopener noreferrer'>polymarket.com</a></b>,并完成页面上的 <b>“Enable Trading”</b> 授权。",
+      "acct.setup.s3":"在网站上<b>存入 USDC</b>——资金存放在你的<b>存款钱包</b>,而不是签名器地址。",
+      "acct.setup.s4":"<b>验证并重新生成。</b>让 agent 运行 <code>wallet show</code> + <code>clob balance</code>,然后重新生成这个仪表盘来填充本页。",
+      "acct.setup.note":"全新钱包可以签名并通过 dry-run,但在完成第 2–3 步之前,真实下单会以 <code>InsufficientAllowanceError</code> 失败。完整步骤见 <button type='button' class='lnk' data-goto='readme'>说明</button> 标签页。"
+    }
+  };
+  function resolveLang(){
+    var stored=null; try{ stored=localStorage.getItem("poly_lang"); }catch(e){}
+    var meta=(D&&D.meta)||{}, l=stored||meta.lang||"zh";
+    return (l==="en"||l==="zh")?l:"zh";
+  }
+  var LANG = resolveLang();
+  function t(key, vars){
+    var d=I18N[LANG]||I18N.en, s=(d&&d[key]!=null)?d[key]:(I18N.en[key]!=null?I18N.en[key]:key);
+    if(vars) s=s.replace(/\{(\w+)\}/g, function(_,k){ return vars[k]!=null?vars[k]:"{"+k+"}"; });
+    return s;
+  }
+  function tv(v){ return (v && typeof v==="object") ? (v[LANG]!=null?v[LANG]:v.en) : v; }
+  function catLabel(c){ var k="cat."+c, v=t(k); return v===k?c:v; }
+  function applyStaticI18n(){
+    var d=I18N[LANG]||I18N.en;
+    function setAll(attr, fn){
+      [].forEach.call(document.querySelectorAll("["+attr+"]"), function(el){
+        var k=el.getAttribute(attr), v=(d[k]!=null)?d[k]:I18N.en[k]; if(v!=null) fn(el,v);
+      });
+    }
+    setAll("data-i18n", function(el,v){ el.textContent=v; });
+    setAll("data-i18n-html", function(el,v){ el.innerHTML=v; });
+    setAll("data-i18n-title", function(el,v){ el.setAttribute("title",v); });
+    setAll("data-i18n-aria", function(el,v){ el.setAttribute("aria-label",v); });
+    setAll("data-i18n-q", function(el,v){ el.setAttribute("data-q",v); });
+    document.documentElement.lang = (LANG==="zh")?"zh-CN":"en";
+  }
+  function renderChrome(){
+    var meta=(D&&D.meta)||{};
+    var wl=document.getElementById("walletLabel"); if(wl) wl.textContent = meta.wallet_label || t("chrome.noWallet");
+    var sn=document.getElementById("snapTime"); if(sn) sn.textContent = t("chrome.snapshot")+" "+(meta.generated_at?shortTime(meta.generated_at)+" UTC":"—");
+  }
+  function applyLang(){
+    applyStaticI18n();
+    [].forEach.call(document.querySelectorAll(".lang-btn"), function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-lang")===LANG?"true":"false"); });
+    renderChrome(); renderReadme(); renderMarkets(); renderRecs(); renderAccount();
+  }
+  function setLang(l){ LANG=(l==="en")?"en":"zh"; try{ localStorage.setItem("poly_lang",LANG); }catch(e){} applyLang(); }
+
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
     return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]; }); }
   function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
@@ -701,14 +897,14 @@ const DATA = {
   function timeLeft(m){
     if(!m.end_date) return null;
     var e=new Date(m.end_date).getTime(); if(!isFinite(e)) return null;
-    var diff=e-nowTs(); if(diff<=0) return {txt:"Ended", cls:"ended"};
+    var diff=e-nowTs(); if(diff<=0) return {txt:t("time.ended"), cls:"ended"};
     var days=diff/86400000;
-    if(days<1) return {txt:"Today", cls:"soon"};
-    if(days<2) return {txt:"1d left", cls:"soon"};
-    if(days<14) return {txt:Math.round(days)+"d left", cls:days<=3?"soon":""};
-    if(days<60) return {txt:Math.round(days/7)+"w left", cls:""};
-    if(days<365) return {txt:Math.round(days/30)+"mo left", cls:""};
-    return {txt:Math.round(days/365)+"y left", cls:""};
+    if(days<1) return {txt:t("time.today"), cls:"soon"};
+    if(days<2) return {txt:t("time.1d"), cls:"soon"};
+    if(days<14) return {txt:t("time.d",{n:Math.round(days)}), cls:days<=3?"soon":""};
+    if(days<60) return {txt:t("time.w",{n:Math.round(days/7)}), cls:""};
+    if(days<365) return {txt:t("time.mo",{n:Math.round(days/30)}), cls:""};
+    return {txt:t("time.y",{n:Math.round(days/365)}), cls:""};
   }
 
   /* ---------- visuals ---------- */
@@ -736,7 +932,7 @@ const DATA = {
       bars+'</svg>';
   }
   function sparkSVG(closes, i){
-    if(!closes || closes.length<2) return '<div class="empty-mini">no price history yet</div>';
+    if(!closes || closes.length<2) return '<div class="empty-mini">'+t("card.noHistory")+'</div>';
     var n=closes.map(num), w=300, h=42, p=3;
     var mn=Math.min.apply(null,n), mx=Math.max.apply(null,n), span=(mx-mn)||1;
     var xy=n.map(function(v,k){ return [p+(k/(n.length-1))*(w-2*p), p+(1-(v-mn)/span)*(h-2*p)]; });
@@ -751,11 +947,11 @@ const DATA = {
       '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="2.6" fill="'+col+'"/></svg>';
   }
   function priceChart(m, i){ return candleSVG(m.candles) || sparkSVG(m.sparkline, i); }
-  function chartHead(m){ return '<div class="block-head"><span class="eyebrow">Price history</span>'+
-    ((m.candles&&m.candles.length)?'<span class="hint">OHLC · vol</span>':'')+'</div>'; }
+  function chartHead(m){ return '<div class="block-head"><span class="eyebrow">'+t("card.priceHistory")+'</span>'+
+    ((m.candles&&m.candles.length)?'<span class="hint">'+t("card.ohlcVol")+'</span>':'')+'</div>'; }
   function bookHTML(depth){
     var bids=(depth&&depth.bids)||[], asks=(depth&&depth.asks)||[];
-    if(!bids.length && !asks.length) return '<div class="empty-mini">no order book yet</div>';
+    if(!bids.length && !asks.length) return '<div class="empty-mini">'+t("card.noBook")+'</div>';
     var lastCum=function(a){ return a.length?num(a[a.length-1][2]):0; };
     var maxCum=Math.max(lastCum(bids),lastCum(asks))||1;
     var row=function(lv,cls){ var wd=(num(lv[2])/maxCum)*100;
@@ -765,7 +961,7 @@ const DATA = {
     asks.slice(0,5).slice().reverse().forEach(function(lv){ html+=row(lv,"ask"); });
     if(bids.length && asks.length){
       var spread=num(asks[0][0])-num(bids[0][0]), mid=(num(asks[0][0])+num(bids[0][0]))/2;
-      html+='<div class="spread"><span>spread <b>'+fmtTick(spread)+'</b></span><span>mid <b>'+fmtTick(mid)+'</b></span></div>';
+      html+='<div class="spread"><span>'+t("card.spread")+' <b>'+fmtTick(spread)+'</b></span><span>'+t("card.mid")+' <b>'+fmtTick(mid)+'</b></span></div>';
     }
     bids.slice(0,5).forEach(function(lv){ html+=row(lv,"bid"); });
     return html+'</div>';
@@ -802,9 +998,9 @@ const DATA = {
   function cardHTML(m, idx){
     var yp=num(m.yes_price), yPct=pct(m.yes_price), nPct=100-yPct, url=marketUrl(m);
     var d=m.depth||{}, bb=(d.bids&&d.bids[0]), ba=(d.asks&&d.asks[0]);
-    var spreadTxt=(bb&&ba)?'<span>spread <b>'+fmtTick(num(ba[0])-num(bb[0]))+'</b></span>':"";
-    var flow=num(m.net_flow), flowTxt=(m.net_flow==null||m.net_flow==="")?"":'<span>flow <b class="'+(flow>=0?"pos":"neg")+'">'+(flow>=0?"+":"−")+"$"+compact(flow)+'</b></span>';
-    var vol=m.volume_24h?'<span>24h vol <b>$'+compact(m.volume_24h)+'</b></span>':"";
+    var spreadTxt=(bb&&ba)?'<span>'+t("card.spread")+' <b>'+fmtTick(num(ba[0])-num(bb[0]))+'</b></span>':"";
+    var flow=num(m.net_flow), flowTxt=(m.net_flow==null||m.net_flow==="")?"":'<span>'+t("card.flow")+' <b class="'+(flow>=0?"pos":"neg")+'">'+(flow>=0?"+":"−")+"$"+compact(flow)+'</b></span>';
+    var vol=m.volume_24h?'<span>'+t("card.vol24")+' <b>$'+compact(m.volume_24h)+'</b></span>':"";
     var tl=timeLeft(m), tlHTML=tl?'<span class="mtime '+tl.cls+'">'+esc(tl.txt)+'</span>':"";
     var tag=m.category?'<span class="mtag">'+esc(m.category)+'</span>':"";
     return '<div class="mkt" data-idx="'+idx+'" role="button" tabindex="0" aria-label="'+esc(m.question)+' — open details">'+
@@ -818,8 +1014,8 @@ const DATA = {
       '<div class="gauge-labels"><span class="l">YES '+yp.toFixed(2)+'</span><span class="r">NO '+(1-yp).toFixed(2)+'</span></div>'+
       '<div class="mkt-meta">'+vol+flowTxt+spreadTxt+'</div>'+
       '<div class="mkt-block">'+chartHead(m)+priceChart(m,idx)+'</div>'+
-      '<div class="mkt-block"><div class="block-head"><span class="eyebrow">Order book</span></div>'+bookHTML(m.depth)+'</div>'+
-      (url?'<a class="trade" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" aria-label="Trade '+esc(m.question)+' on Polymarket">Trade on Polymarket <span class="ext" aria-hidden="true">↗</span></a>':'')+
+      '<div class="mkt-block"><div class="block-head"><span class="eyebrow">'+t("card.orderBook")+'</span></div>'+bookHTML(m.depth)+'</div>'+
+      (url?'<a class="trade" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(m.question)+'">'+t("card.trade")+' <span class="ext" aria-hidden="true">↗</span></a>':'')+
     '</div>';
   }
 
@@ -829,35 +1025,35 @@ const DATA = {
     if(mState.cat!=="All") ms=ms.filter(function(m){return (m.category||"Other")===mState.cat;});
     if(mState.q){ var q=mState.q.toLowerCase(); ms=ms.filter(function(m){return (m.question||"").toLowerCase().indexOf(q)>=0;}); }
     ms.sort(sortCmp[mState.sort]||sortCmp.hot);
-    document.getElementById("mkt-count").innerHTML='Markets <b>('+ms.length+')</b>';
+    document.getElementById("mkt-count").innerHTML=t("mk.countLabel")+' <b>('+ms.length+')</b>';
     grid.innerHTML = ms.length
       ? ms.map(function(m){ return cardHTML(m, D.markets.indexOf(m)); }).join("")
-      : '<div class="empty" style="grid-column:1/-1;margin:0">No markets match your filters.</div>';
+      : '<div class="empty" style="grid-column:1/-1;margin:0">'+t("mk.empty")+'</div>';
   }
 
   function renderMarkets(){
     var el=document.getElementById("panel-markets"), ms=(D&&D.markets)||[];
-    if(!ms.length){ el.innerHTML='<div class="empty">No markets in this snapshot.</div>'; return; }
+    if(!ms.length){ el.innerHTML='<div class="empty">'+t("mk.emptySnapshot")+'</div>'; return; }
     var st=computeStats();
     var active=st.active!=null?st.active:(st.markets!=null?st.markets:ms.length);
     var cats=presentCats().map(function(c){
-      return '<button class="cat" type="button" data-cat="'+esc(c)+'" aria-pressed="'+(mState.cat===c?"true":"false")+'">'+esc(c)+'</button>';
+      return '<button class="cat" type="button" data-cat="'+esc(c)+'" aria-pressed="'+(mState.cat===c?"true":"false")+'">'+esc(catLabel(c))+'</button>';
     }).join("");
     var sorts=SORTS.map(function(s){
-      return '<button class="sortb" type="button" data-sort="'+s.key+'" aria-pressed="'+(mState.sort===s.key?"true":"false")+'">'+esc(s.label)+'</button>';
+      return '<button class="sortb" type="button" data-sort="'+s.key+'" aria-pressed="'+(mState.sort===s.key?"true":"false")+'">'+esc(t("mk.sort."+s.key))+'</button>';
     }).join("");
     el.innerHTML=
       '<div class="mkt-stats">'+
-        '<div class="s"><div class="v">$'+compact(st.total_volume)+'</div><div class="k">Total volume</div></div>'+
-        '<div class="s"><div class="v">$'+compact(st.volume_24h)+'</div><div class="k">24h volume</div></div>'+
-        '<div class="s"><div class="v">$'+compact(st.liquidity)+'</div><div class="k">Liquidity</div></div>'+
-        '<div class="s"><div class="v"><span class="live-dot"></span>'+esc(active)+'</div><div class="k">Active markets</div></div>'+
+        '<div class="s"><div class="v">$'+compact(st.total_volume)+'</div><div class="k">'+t("mk.stats.total")+'</div></div>'+
+        '<div class="s"><div class="v">$'+compact(st.volume_24h)+'</div><div class="k">'+t("mk.stats.vol24")+'</div></div>'+
+        '<div class="s"><div class="v">$'+compact(st.liquidity)+'</div><div class="k">'+t("mk.stats.liq")+'</div></div>'+
+        '<div class="s"><div class="v"><span class="live-dot"></span>'+esc(active)+'</div><div class="k">'+t("mk.stats.active")+'</div></div>'+
       '</div>'+
-      '<div class="cats" role="group" aria-label="Filter by category">'+cats+'</div>'+
+      '<div class="cats" role="group" aria-label="'+esc(t("mk.cats.aria"))+'">'+cats+'</div>'+
       '<div class="controls">'+
         '<label class="search"><span class="ic" aria-hidden="true">⌕</span>'+
-          '<input id="mkt-search" type="search" placeholder="Search markets…" aria-label="Search markets" value="'+esc(mState.q)+'"></label>'+
-        '<div class="sorts" role="group" aria-label="Sort markets">'+sorts+'</div>'+
+          '<input id="mkt-search" type="search" placeholder="'+esc(t("mk.search.ph"))+'" aria-label="'+esc(t("mk.search.aria"))+'" value="'+esc(mState.q)+'"></label>'+
+        '<div class="sorts" role="group" aria-label="'+esc(t("mk.sorts.aria"))+'">'+sorts+'</div>'+
       '</div>'+
       '<div class="mkt-count" id="mkt-count"></div>'+
       '<div class="grid" id="mkt-grid"></div>';
@@ -896,22 +1092,22 @@ const DATA = {
     var yp=num(m.yes_price), url=marketUrl(m), tl=timeLeft(m);
     var bg=document.createElement("div"); bg.className="modal-bg";
     bg.innerHTML='<div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(m.question)+'">'+
-      '<div class="modal-head"><h2>'+esc(m.question)+'</h2><button class="modal-x" type="button" aria-label="Close">×</button></div>'+
-      ((m.category||tl)?'<div class="modal-tags">'+(m.category?'<span class="mtag">'+esc(m.category)+'</span>':'')+(tl?'<span class="mtime '+tl.cls+'">'+esc(tl.txt)+'</span>':'')+'</div>':'')+
-      '<p class="desc">'+esc(m.description||"Resolution criteria not provided in this snapshot.")+'</p>'+
+      '<div class="modal-head"><h2>'+esc(m.question)+'</h2><button class="modal-x" type="button" aria-label="'+esc(t("modal.close"))+'">×</button></div>'+
+      ((m.category||tl)?'<div class="modal-tags">'+(m.category?'<span class="mtag">'+esc(catLabel(m.category))+'</span>':'')+(tl?'<span class="mtime '+tl.cls+'">'+esc(tl.txt)+'</span>':'')+'</div>':'')+
+      '<p class="desc">'+esc(m.description||t("modal.noResolution"))+'</p>'+
       '<div class="yesno">'+
-        '<div class="yn y"><div class="lab">YES</div><div class="px">'+(yp*100).toFixed(1)+'¢</div><div class="sub">per share</div></div>'+
-        '<div class="yn n"><div class="lab">NO</div><div class="px">'+((1-yp)*100).toFixed(1)+'¢</div><div class="sub">per share</div></div>'+
+        '<div class="yn y"><div class="lab">YES</div><div class="px">'+(yp*100).toFixed(1)+'¢</div><div class="sub">'+t("modal.perShare")+'</div></div>'+
+        '<div class="yn n"><div class="lab">NO</div><div class="px">'+((1-yp)*100).toFixed(1)+'¢</div><div class="sub">'+t("modal.perShare")+'</div></div>'+
       '</div>'+
       '<div class="mstats">'+
-        '<div class="mstat"><div class="k">Total volume</div><div class="v">$'+compact(totalVol(m))+'</div></div>'+
-        '<div class="mstat"><div class="k">24h volume</div><div class="v">$'+compact(m.volume_24h)+'</div></div>'+
-        '<div class="mstat"><div class="k">Liquidity</div><div class="v">'+(m.liquidity?'$'+compact(m.liquidity):'—')+'</div></div>'+
-        '<div class="mstat"><div class="k">Ends</div><div class="v">'+(tl?esc(tl.txt):'—')+'</div></div>'+
+        '<div class="mstat"><div class="k">'+t("modal.total")+'</div><div class="v">$'+compact(totalVol(m))+'</div></div>'+
+        '<div class="mstat"><div class="k">'+t("modal.vol24")+'</div><div class="v">$'+compact(m.volume_24h)+'</div></div>'+
+        '<div class="mstat"><div class="k">'+t("modal.liq")+'</div><div class="v">'+(m.liquidity?'$'+compact(m.liquidity):'—')+'</div></div>'+
+        '<div class="mstat"><div class="k">'+t("modal.ends")+'</div><div class="v">'+(tl?esc(tl.txt):'—')+'</div></div>'+
       '</div>'+
       '<div class="modal-chart">'+chartHead(m)+priceChart(m,"m")+'</div>'+
-      (url?'<div class="modal-cta"><a class="cta-primary" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View on Polymarket <span aria-hidden="true">↗</span></a></div>'
-          :'<p class="desc" style="margin:0;text-align:center">No Polymarket link available for this market.</p>')+
+      (url?'<div class="modal-cta"><a class="cta-primary" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+t("modal.viewOn")+' <span aria-hidden="true">↗</span></a></div>'
+          :'<p class="desc" style="margin:0;text-align:center">'+t("modal.noLink")+'</p>')+
     '</div>';
     document.body.appendChild(bg);
     var xBtn=bg.querySelector(".modal-x"); xBtn.focus();
@@ -926,24 +1122,24 @@ const DATA = {
   /* ---------- Recommendations ---------- */
   function renderRecs(){
     var el=document.getElementById("panel-recs"), rs=(D&&D.recommendations)||[];
-    if(!rs.length){ el.innerHTML='<div class="empty">No recommendations in this snapshot.</div>'; return; }
+    if(!rs.length){ el.innerHTML='<div class="empty">'+t("recs.empty")+'</div>'; return; }
     el.innerHTML='<div class="recs">'+rs.map(function(r){
       var act=(r.action||"WATCH").toUpperCase(), al=act.toLowerCase();
       var conf=(r.confidence||"medium").toLowerCase();
-      var chips=((r.signals)||[]).map(function(s){return '<span class="chip">'+esc(s)+'</span>';}).join("");
+      var chips=((r.signals)||[]).map(function(s){return '<span class="chip">'+esc(tv(s))+'</span>';}).join("");
       var st=(r.status||"").toLowerCase();
-      var stTxt={executed:"Executed",pending:"Needs approval",skipped:"Skipped"}[st];
+      var stTxt={executed:t("recs.status.executed"),pending:t("recs.status.pending"),skipped:t("recs.status.skipped")}[st];
       var statusHTML = stTxt ? '<span class="rstatus '+st+'">'+stTxt+'</span>' : "";
       var meta=[];
       if(r.strategy) meta.push('<span>'+esc(r.strategy)+'</span>');
-      if(r.size_usd!=null&&r.size_usd!=="") meta.push('<span>size <b>$'+esc(r.size_usd)+'</b></span>');
-      if(r.edge) meta.push('<span>edge <b>'+esc(r.edge)+'</b></span>');
+      if(r.size_usd!=null&&r.size_usd!=="") meta.push('<span>'+t("recs.size")+' <b>$'+esc(r.size_usd)+'</b></span>');
+      if(r.edge) meta.push('<span>'+t("recs.edge")+' <b>'+esc(r.edge)+'</b></span>');
       var metaHTML = meta.length ? '<div class="rec-meta">'+meta.join("")+'</div>' : "";
-      var noteHTML = r.strategy_note ? '<div class="rec-note"><b>'+esc(r.strategy||"strategy")+'</b> '+esc(r.strategy_note)+'</div>' : "";
-      var asideHTML = r.gate_note ? '<div class="rec-aside"><b>set aside</b>'+esc(r.gate_note)+'</div>' : "";
+      var noteHTML = r.strategy_note ? '<div class="rec-note"><b>'+esc(r.strategy||"strategy")+'</b> '+esc(tv(r.strategy_note))+'</div>' : "";
+      var asideHTML = r.gate_note ? '<div class="rec-aside"><b>'+t("recs.setAside")+'</b>'+esc(tv(r.gate_note))+'</div>' : "";
       var url=marketUrl(r), foot="";
-      if(r.order_id) foot+='<span class="rorder">order <b>'+esc(r.order_id)+'</b></span>';
-      if(url) foot+='<a class="rlink" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View on Polymarket <span class="ext" aria-hidden="true">↗</span></a>';
+      if(r.order_id) foot+='<span class="rorder">'+t("recs.order")+' <b>'+esc(r.order_id)+'</b></span>';
+      if(url) foot+='<a class="rlink" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+t("recs.viewOn")+' <span class="ext" aria-hidden="true">↗</span></a>';
       var footHTML = foot ? '<div class="rec-foot">'+foot+'</div>' : "";
       return '<div class="rec a-'+al+'">'+
         '<div class="top"><span class="badge b-'+al+'">'+esc(act)+'</span>'+statusHTML+
@@ -952,7 +1148,7 @@ const DATA = {
         metaHTML+
         '<div class="conf"><span class="lvl-txt c-'+conf+'">'+esc(conf)+'</span>'+segMeter(r.confidence_score,conf)+'</div>'+
         noteHTML+
-        (r.rationale?'<div class="rationale">'+esc(r.rationale)+'</div>':"")+
+        (r.rationale?'<div class="rationale">'+esc(tv(r.rationale))+'</div>':"")+
         asideHTML+
         (chips?'<div class="chips">'+chips+'</div>':"")+
         footHTML+
@@ -992,21 +1188,15 @@ const DATA = {
   // Account tab when no wallet is set up: render the setup walkthrough instead of a blank panel.
   function accountSetupHTML(){
     return '<div class="readme acct-empty"><div class="rm-sect">'+
-      '<h2 class="rm-htitle"><span class="i">○</span>No wallet connected</h2>'+
-      '<p class="rm-lead">Your <b>balance, positions, open orders &amp; trade history</b> appear here once a funded, '+
-        'trading-enabled wallet is configured. Markets and Recommendations work without one — to light this tab up, '+
-        'set a wallet up once:</p>'+
+      '<h2 class="rm-htitle"><span class="i">○</span>'+t("acct.setup.title")+'</h2>'+
+      '<p class="rm-lead">'+t("acct.setup.lead")+'</p>'+
       '<ol class="rm-steps">'+
-        '<li><span class="n">1</span><span class="b"><b>Give the agent your wallet’s private key.</b> It configures the signer '+
-          '(<code>poly setup</code>) so it can sign on your behalf — the key is never printed, echoed, or logged.</span></li>'+
-        '<li><span class="n">2</span><span class="b"><b>Log in to <a href="https://polymarket.com" target="_blank" rel="noopener noreferrer">polymarket.com</a> '+
-          'with the same wallet</b> and complete the on-screen <b>“Enable Trading”</b> approvals.</span></li>'+
-        '<li><span class="n">3</span><span class="b"><b>Deposit USDC</b> on the website — funds live on your <b>deposit wallet</b>, not the signer address.</span></li>'+
-        '<li><span class="n">4</span><span class="b"><b>Verify &amp; regenerate.</b> Ask the agent to run <code>wallet show</code> + <code>clob balance</code>, '+
-          'then regenerate this dashboard to populate the tab.</span></li>'+
+        '<li><span class="n">1</span><span class="b">'+t("acct.setup.s1")+'</span></li>'+
+        '<li><span class="n">2</span><span class="b">'+t("acct.setup.s2")+'</span></li>'+
+        '<li><span class="n">3</span><span class="b">'+t("acct.setup.s3")+'</span></li>'+
+        '<li><span class="n">4</span><span class="b">'+t("acct.setup.s4")+'</span></li>'+
       '</ol>'+
-      '<p class="rm-note">A brand-new wallet can sign and pass a dry-run, but live orders fail with <code>InsufficientAllowanceError</code> '+
-        'until steps 2–3 are done. Full walkthrough on the <button type="button" class="lnk" data-goto="readme">Readme</button> tab.</p>'+
+      '<p class="rm-note">'+t("acct.setup.note")+'</p>'+
     '</div></div>';
   }
 
@@ -1018,34 +1208,34 @@ const DATA = {
     // portfolio value = positions' market value; fall back to summing current_value if value.total is missing/0
     var pv = num(val.total) || positions.reduce(function(s,p){ return s+num(p.current_value); }, 0);
     var html='<div class="readout">'+
-      '<div class="ro"><div class="k">Cash · USDC</div><div class="v">'+usd(bal.cash)+'</div></div>'+
-      '<div class="ro"><div class="k">Portfolio value</div><div class="v">'+usd(pv)+'</div></div>'+
-      '<div class="ro"><div class="k">Open orders</div><div class="v">'+orders.length+'</div></div>'+
-      '<div class="ro"><div class="k">Positions</div><div class="v">'+positions.length+'</div></div>'+
+      '<div class="ro"><div class="k">'+t("acct.cash")+'</div><div class="v">'+usd(bal.cash)+'</div></div>'+
+      '<div class="ro"><div class="k">'+t("acct.portfolio")+'</div><div class="v">'+usd(pv)+'</div></div>'+
+      '<div class="ro"><div class="k">'+t("acct.openOrders")+'</div><div class="v">'+orders.length+'</div></div>'+
+      '<div class="ro"><div class="k">'+t("acct.positions")+'</div><div class="v">'+positions.length+'</div></div>'+
     '</div>';
-    if(w.deposit_wallet) html+='<p class="deposit">deposit wallet <b>'+esc(w.deposit_wallet)+'</b>'+(w.note?' · '+esc(w.note):"")+'</p>';
-    html+='<h3 class="sect-h">Positions</h3>';
+    if(w.deposit_wallet) html+='<p class="deposit">'+t("acct.depositWallet")+' <b>'+esc(w.deposit_wallet)+'</b>'+(w.note?' · '+esc(w.note):"")+'</p>';
+    html+='<h3 class="sect-h">'+t("acct.sect.positions")+'</h3>';
     html+= buildTable("positions", positions, [
-      {key:"title",label:"Market",label_col:true,render:function(r){return esc(r.title);}},
-      {key:"outcome",label:"Out",render:function(r){return pill(r.outcome);}},
-      {key:"size",label:"Size",type:"num"},{key:"avg_price",label:"Avg",type:"num"},{key:"cur_price",label:"Cur",type:"num"},
-      {key:"current_value",label:"Value",type:"num",render:function(r){return usd(r.current_value);}},
-      {key:"cash_pnl",label:"PnL",type:"num",render:pnlCell}
-    ]) || '<div class="empty">No open positions.</div>';
-    html+='<h3 class="sect-h">Open orders</h3>';
+      {key:"title",label:t("col.market"),label_col:true,render:function(r){return esc(r.title);}},
+      {key:"outcome",label:t("col.out"),render:function(r){return pill(r.outcome);}},
+      {key:"size",label:t("col.size"),type:"num"},{key:"avg_price",label:t("col.avg"),type:"num"},{key:"cur_price",label:t("col.cur"),type:"num"},
+      {key:"current_value",label:t("col.value"),type:"num",render:function(r){return usd(r.current_value);}},
+      {key:"cash_pnl",label:t("col.pnl"),type:"num",render:pnlCell}
+    ]) || '<div class="empty">'+t("acct.empty.positions")+'</div>';
+    html+='<h3 class="sect-h">'+t("acct.sect.orders")+'</h3>';
     html+= buildTable("orders", orders, [
-      {key:"id",label:"Order"},{key:"side",label:"Side",render:sideCell},
-      {key:"outcome",label:"Out",render:function(r){return pill(r.outcome);}},{key:"price",label:"Price",type:"num"},
-      {key:"size_matched",label:"Filled",type:"num",render:function(r){return esc(r.size_matched)+"/"+esc(r.original_size);}},
-      {key:"status",label:"Status",render:function(r){return pill(r.status);}}
-    ]) || '<div class="empty">No open orders.</div>';
-    html+='<h3 class="sect-h">Trade history</h3>';
+      {key:"id",label:t("col.order")},{key:"side",label:t("col.side"),render:sideCell},
+      {key:"outcome",label:t("col.out"),render:function(r){return pill(r.outcome);}},{key:"price",label:t("col.price"),type:"num"},
+      {key:"size_matched",label:t("col.filled"),type:"num",render:function(r){return esc(r.size_matched)+"/"+esc(r.original_size);}},
+      {key:"status",label:t("col.status"),render:function(r){return pill(r.status);}}
+    ]) || '<div class="empty">'+t("acct.empty.orders")+'</div>';
+    html+='<h3 class="sect-h">'+t("acct.sect.trades")+'</h3>';
     html+= buildTable("trades", trades, [
-      {key:"matched_at",label:"Time",render:function(r){return shortTime(r.matched_at);}},
-      {key:"side",label:"Side",render:sideCell},{key:"outcome",label:"Out",render:function(r){return pill(r.outcome);}},
-      {key:"price",label:"Price",type:"num"},{key:"size",label:"Size",type:"num"},
-      {key:"status",label:"Status",render:function(r){return pill(r.status);}}
-    ]) || '<div class="empty">No trades yet.</div>';
+      {key:"matched_at",label:t("col.time"),render:function(r){return shortTime(r.matched_at);}},
+      {key:"side",label:t("col.side"),render:sideCell},{key:"outcome",label:t("col.out"),render:function(r){return pill(r.outcome);}},
+      {key:"price",label:t("col.price"),type:"num"},{key:"size",label:t("col.size"),type:"num"},
+      {key:"status",label:t("col.status"),render:function(r){return pill(r.status);}}
+    ]) || '<div class="empty">'+t("acct.empty.trades")+'</div>';
     el.innerHTML=html;
   }
   document.getElementById("panel-account").addEventListener("click", function(e){
@@ -1106,17 +1296,17 @@ const DATA = {
 
   /* ---------- boot ---------- */
   function boot(){
-    if(!D || (!D.markets && !D.recommendations && !D.account)) document.getElementById("nodata").style.display="block";
-    var meta=(D&&D.meta)||{};
-    document.getElementById("walletLabel").textContent = meta.wallet_label || "no wallet";
-    document.getElementById("snapTime").textContent = "snapshot " + (meta.generated_at ? shortTime(meta.generated_at)+" UTC" : "—");
+    if(!D || (!D.markets && !D.recommendations && !D.account)){ var nd=document.getElementById("nodata"); if(nd) nd.style.display="block"; }
     document.getElementById("cnt-markets").textContent = ((D&&D.markets)||[]).length || "";
     document.getElementById("cnt-recs").textContent = ((D&&D.recommendations)||[]).length || "";
     document.getElementById("refreshBtn").addEventListener("click", function(){
       if(typeof window.sendPrompt==="function") window.sendPrompt("refresh my Polymarket dashboard");
-      else this.textContent="↻ ask the agent to regenerate";
+      else this.textContent=t("chrome.regenAsk");
     });
-    renderReadme(); renderMarkets(); renderRecs(); renderAccount();
+    [].forEach.call(document.querySelectorAll(".lang-btn"), function(b){
+      b.addEventListener("click", function(){ setLang(b.getAttribute("data-lang")); });
+    });
+    applyLang();   // resolve language, apply static i18n + header chrome, then render all panels
   }
   boot();
 })();

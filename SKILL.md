@@ -149,6 +149,10 @@ dashboard" / "display my positions or markets". When in doubt, build it. The art
 **cannot** run `poly` or call the MCP — so you inject a data snapshot at generation time. Full procedure,
 `DATA` schema, and source map: [reference/artifacts.md](reference/artifacts.md).
 
+**The dashboard is bilingual (中文/English), defaulting to Chinese** with an instant header `中/EN` toggle.
+The UI translates itself; for a scan, have the strategy sub-agents write `thesis` and `risks` bilingually
+(`{"en":…,"zh":…}`) so the per-market analysis toggles too. Set `run.json.lang` to change the default.
+
 1. **Fetch** what they asked to see: Markets → **the 50 most-traded markets in the last 24h** (pass them
    as the `universe` pool — `build_data.py` ranks by `volume_24h` and takes the top 50), enriched via MCP
    `get_order_book_depth` / `get_price_history` / `get_market_stats` for depth / OHLC candles / flow;
